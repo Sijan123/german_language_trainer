@@ -1,0 +1,19 @@
+# Nothing here is built or installed — the repo IS the site. These are
+# leftovers from the old Sprechen mode and from local tooling.
+
+# whisper.cpp binaries, model weights and the LanguageTool jar: hundreds of MB
+whisper/
+languagetool/
+
+__pycache__/
+*.pyc
+
+api-key.txt
+.env
+node_modules/
+
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
