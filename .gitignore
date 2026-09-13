@@ -9,7 +9,7 @@ __pycache__/
 *.pyc
 
 # intermediates from make-audio.py; the mp3s beside them are committed
-audio/**/*.wav
+# audio/**/*.wav
 audio/_demo/
 
 # Piper voice models, downloaded on demand by make-audio.py
