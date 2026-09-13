@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="css/style.css?v=2026-09-12c">
+<link rel="stylesheet" href="css/style.css?v=2026-09-13d">
 </head>
 <body>
 <div class="wrap">
@@ -40,14 +40,20 @@
         <span class="vocab-count" id="conv-count"></span>
       </div>
       <div class="theme-chips" id="conv-topics"></div>
-      <p class="vocab-hint">Alltagsgespräche zwischen Shruti und Sijan, Niveau&nbsp;A2. Tippe auf ein Gespräch: jeder Satz einzeln anhörbar, mit englischer Übersetzung.</p>
+      <p class="vocab-hint">Alltagsgespräche zwischen Shruti und Sijan, Niveau&nbsp;A2. Tippe auf ein Gespräch: jeder Satz einzeln anhörbar, mit englischer Übersetzung. Beim Abspielen pausiert die <kbd>Leertaste</kbd>, <kbd>←</kbd> und <kbd>→</kbd> gehen einen Satz zurück oder vor, und das ↻ neben einem Satz wiederholt ab dort.</p>
       <div class="conv-list" id="conv-list"></div>
     </div>
 
     <div class="conv-detail" id="conv-detail" hidden>
       <div class="conv-detail-top">
         <button class="back-link" id="conv-back">← Gespräche</button>
-        <button class="btn btn-primary conv-play" id="conv-play" data-on="false">▶&nbsp; Ganzes Gespräch</button>
+        <span class="conv-voices" id="conv-voices" data-recorded="false"></span>
+        <div class="conv-controls">
+          <button class="btn conv-step" id="conv-prev" title="Satz zurück" aria-label="Einen Satz zurück" hidden>↺</button>
+          <button class="btn btn-primary conv-play" id="conv-play" data-on="false" data-state="idle">▶&nbsp; Ganzes Gespräch</button>
+          <button class="btn conv-step" id="conv-next" title="Satz vor" aria-label="Einen Satz vor" hidden>↻</button>
+          <button class="btn conv-stop" id="conv-stop" title="Wiedergabe beenden" aria-label="Wiedergabe beenden" hidden>■</button>
+        </div>
       </div>
       <h2 class="conv-title" id="conv-title"></h2>
       <div class="conv-meta" id="conv-meta"></div>
@@ -98,10 +104,10 @@
   </section>
 
   <footer class="hint">Alles läuft lokal — die Gespräche, die Vokabeln und die Sprachausgabe. Nichts verlässt deinen Rechner.
-    <span class="build">Build 2026-09-12 · statisch, 4 Modi</span>
+    <span class="build">Build 2026-09-13d · Avatare</span>
   </footer>
 </div>
 
-<script type="module" src="js/app.js?v=2026-09-12c"></script>
+<script type="module" src="js/app.js?v=2026-09-13d"></script>
 </body>
 </html>

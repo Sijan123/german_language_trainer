@@ -217,8 +217,22 @@ body[data-mode="grammar"] .en-bar { display: flex; }
 .conv-detail { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
                padding: 18px 18px 22px; box-shadow: var(--shadow); }
 .conv-detail-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.conv-play { margin-left: auto; white-space: nowrap; }
-.conv-play[data-on="true"] { background: var(--bad); border-color: var(--bad); }
+.conv-controls { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+/* One button, three labels. A fixed width keeps the row from jumping every time
+   it switches between "Ganzes Gespräch", "Pause" and "Weiter". */
+.conv-play { white-space: nowrap; min-width: 10.5rem; text-align: center; }
+/* A sentence back, a sentence on. Only useful while something is playing, so
+   they appear with the rest of the transport. */
+.conv-step { background: transparent; border-color: var(--border); color: var(--ink-faint);
+             padding: 8px 11px; line-height: 1; font-size: 1rem; }
+.conv-step:hover { color: var(--accent); border-color: var(--accent); }
+.conv-play[data-state="playing"] { background: var(--surface-sunken); border-color: var(--border); color: var(--ink); }
+.conv-play[data-state="paused"] { background: var(--accent); border-color: var(--accent); }
+/* Stop is deliberately small and quiet: it is the rarer of the two, and losing
+   your place by half a second's misaim is annoying. */
+.conv-stop { background: transparent; color: var(--bad); border-color: var(--bad);
+             padding: 8px 12px; line-height: 1; }
+.conv-stop:hover { background: var(--bad); color: #fff; }
 .conv-title { font-family: 'Fraunces', Georgia, serif; font-size: 1.3rem; font-weight: 600; margin: 0 0 6px; line-height: 1.25; }
 .conv-meta { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
 .conv-topic-chip { font-family: 'IBM Plex Mono', monospace; font-size: .6rem; text-transform: uppercase;
@@ -228,8 +242,21 @@ body[data-mode="grammar"] .en-bar { display: flex; }
 .conv-lines { display: flex; flex-direction: column; gap: 10px; }
 .conv-line { display: flex; align-items: flex-start; gap: 9px; padding: 8px; margin: -8px; border-radius: 10px; }
 .conv-line[data-now] { background: var(--accent-soft); }
-.conv-who { flex: 0 0 52px; font-family: 'IBM Plex Mono', monospace; font-size: .62rem;
-            text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); padding-top: 5px; }
+.conv-who { flex: 0 0 48px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+            font-family: 'IBM Plex Mono', monospace; font-size: .58rem;
+            text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); padding-top: 2px; }
+/* The avatar takes the speaker's own tint through currentColor: one drawing,
+   two colours, and nothing to load. */
+.conv-avatar { width: 34px; height: 34px; display: block; flex: 0 0 auto; }
+.conv-avatar .av-bg { fill: currentColor; opacity: .16; }
+.conv-avatar .av-fg { fill: currentColor; }
+.conv-avatar .av-face { fill: var(--surface); }
+.conv-name { line-height: 1; }
+/* Whoever is speaking leans in a little — the same cue a highlighted bubble
+   gives, on the side of the row your eye is already on. */
+.conv-avatar { transition: transform .2s ease; }
+.conv-line[data-now] .conv-avatar, .conv-line[data-typing] .conv-avatar { transform: scale(1.08); }
+.conv-line[data-now] .conv-avatar .av-bg, .conv-line[data-typing] .conv-avatar .av-bg { opacity: .32; }
 .conv-line[data-who="Shruti"] .conv-who { color: var(--t-familie); }
 .conv-line[data-who="Sijan"] .conv-who { color: var(--accent); }
 .conv-bubble { flex: 1; display: flex; flex-direction: column; gap: 2px;
@@ -237,7 +264,62 @@ body[data-mode="grammar"] .en-bar { display: flex; }
 .conv-line[data-who="Sijan"] .conv-bubble { background: var(--accent-soft); }
 .conv-de { font-size: .95rem; line-height: 1.5; }
 .conv-en { font-size: .82rem; color: var(--ink-faint); line-height: 1.45; }
-.conv-line .speak-btn { margin-top: 6px; }
+/* Hear this sentence / go back to it. Stacked so a narrow phone keeps the
+   bubble the width of the screen rather than the buttons. */
+.conv-actions { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+.conv-line .repeat-btn:hover { color: var(--tone, var(--accent)); border-color: var(--tone, var(--accent)); }
+/* The reload button on the line being spoken is the "hear that again" button,
+   so it is the one that should stand out. */
+.conv-line[data-now] .repeat-btn { color: var(--tone, var(--accent)); border-color: var(--tone, var(--accent)); }
+
+/* The voice actually being used — the quickest way to tell a bad system voice
+   from a bad recording. */
+.conv-voices { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; color: var(--ink-faint);
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+.conv-voices[data-recorded="true"] { color: var(--good); }
+
+/* ---- chat reveal ----
+   While a dialogue is playing the transcript is hidden and comes back a line at
+   a time, so you cannot read the answer before you have heard the question.
+   Stopping playback drops [data-reveal] and every line is visible again. */
+.conv-lines[data-reveal="true"] .conv-line[data-pending] { display: none; }
+.conv-lines[data-reveal="true"] .conv-line:not([data-pending]) { animation: bubble-in .28s ease-out both; }
+@keyframes bubble-in {
+  from { opacity: 0; transform: translateY(9px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The dots that stand in for the line during its typing beat. */
+.conv-typing { display: none; gap: 4px; padding: 3px 0 4px; }
+.conv-line[data-typing] .conv-typing { display: flex; }
+.conv-line[data-typing] .conv-de,
+.conv-line[data-typing] .conv-en { display: none; }
+.conv-line[data-typing] .speak-btn { visibility: hidden; }
+.conv-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint);
+                 animation: typing-dot 1.1s infinite ease-in-out; }
+.conv-typing i:nth-child(2) { animation-delay: .15s; }
+.conv-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: .25; transform: translateY(0); }
+  30%           { opacity: .9;  transform: translateY(-3px); }
+}
+
+/* The line being spoken right now. */
+.conv-line[data-now] .conv-bubble { box-shadow: 0 0 0 2px var(--tone, var(--accent)); }
+
+/* Paused. Everything that moves stops moving and the ring goes quiet, so a
+   paused dialogue is obvious without reading the button. */
+.conv-lines[data-paused] .conv-typing i { animation-play-state: paused; }
+.conv-lines[data-paused] .conv-line[data-now] .conv-bubble {
+  box-shadow: 0 0 0 2px var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conv-lines[data-reveal="true"] .conv-line:not([data-pending]) { animation: none; }
+  .conv-typing i { animation: none; opacity: .5; }
+  .conv-avatar { transition: none; }
+  .conv-line[data-now] .conv-avatar, .conv-line[data-typing] .conv-avatar { transform: none; }
+}
 
 /* ---------- Quiz ---------- */
 .quiz-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }

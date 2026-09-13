@@ -8,7 +8,7 @@ Four modes:
 
 | Mode | What it does |
 |---|---|
-| **Gespräche** | 108 everyday dialogues between Shruti and Sijan. Play any sentence on its own, or the whole conversation with the current line highlighted. English under every line. |
+| **Gespräche** | 108 everyday dialogues between Shruti and Sijan. Play any sentence on its own, or the whole conversation — the transcript stays hidden and arrives line by line as you hear it. Pause with the button or the space bar; a recorded line continues mid-sentence, a browser-spoken one repeats. The ↻ beside any line takes playback back to it and carries on from there, and `←`/`→` step a sentence at a time. English under every line. |
 | **Vokabeln** | 1009 words in 20 themes. Each opens to a simple sentence, the same sentence in the Perfekt, and again as a `weil` subordinate clause — plus chips linking to the grammar topic behind it. |
 | **Quiz** | A random word, four English meanings, one right. Running score kept in the browser. |
 | **Grammatik** | 24 A2 topics: the rule, the pattern, five examples, and the mistake people actually make. |
@@ -56,7 +56,77 @@ js/
   grammar-topics.js     24 grammar topics with examples
   speech.js             German text-to-speech
 serve.py                local preview only
+make-audio.py           renders dialogue audio with Piper (optional)
+audio/                  rendered clips, if you have run it
+voices/                 downloaded Piper models (gitignored)
 ```
+
+## Better voices
+
+The dialogues use the browser's own German voice by default, which is mediocre
+on Windows and varies by device. Two ways to improve it:
+
+**Free, no code.** Open the app in **Edge**, which exposes Microsoft's online
+neural voices to the Web Speech API where Chrome does not. On iOS, Settings →
+Accessibility → Spoken Content → Voices → Deutsch → download the *Enhanced*
+voice.
+
+**Render the lines properly.** [Piper](https://github.com/rhasspy/piper) is a
+free offline neural TTS; `de_DE-thorsten` is one of the better open German
+voices.
+
+```bash
+pip install piper-tts
+python make-audio.py            # renders the first ten dialogues
+python make-audio.py --first 20 # the first twenty
+python make-audio.py c001-c020  # the same, by range
+python make-audio.py --all      # all 108, about 27 MB
+python make-audio.py --clean    # wipe audio/ and render again from scratch
+python make-audio.py --tidy     # delete the demo folder and orphaned clips
+python make-audio.py --list-voices
+```
+
+Re-rendering overwrites clips in place, so a plain re-run is enough after a voice
+change. `--clean` is for when the format changed — a run without ffmpeg leaves
+WAVs behind — or when you want to be sure nothing old survived. Every run also
+prunes as it goes: the other extension, files past the end of a dialogue that
+lost a line, folders the manifest no longer lists, and the `--demo` scratch.
+
+Voice models download into `voices/` on first run, ~60 MB each. MP3 needs
+**ffmpeg** on PATH (`winget install Gyan.FFmpeg` on Windows); without it the
+WAVs are kept instead, which works but is about eight times the size.
+
+That writes `audio/<id>/01.mp3 …` and updates `js/audio-manifest.js`. The app
+prefers a rendered clip over the browser voice wherever one exists and falls
+back silently where it doesn't, so a partial render is fine. Shruti and Sijan
+get different voices either way.
+
+Piper's German set is lopsided: `thorsten` (male) comes in low, medium and high,
+but the named female voices — `kerstin`, `ramona`, `eva_k` — stop at low or
+x_low, and at 16 kHz they can sound androgynous rather than female.
+
+The way out is `de_DE-mls-medium`: one model, **236 speakers**, 22 kHz. Pick a
+speaker with `#`:
+
+```bash
+python make-audio.py --demo                        # sample voices side by side
+python make-audio.py --shruti de_DE-mls-medium#42  # use the one you liked
+```
+
+The pairing in the repo is **`de_DE-kerstin-low` for Shruti** and
+**`de_DE-thorsten-medium` for Sijan**, settled by ear against `ramona`.
+
+```bash
+```
+
+`--demo` renders the same sentence in every candidate into `audio/_demo/`, which
+is the only honest way to find a female-sounding speaker among 236 anonymous
+audiobook readers. Once you've chosen, put the spec in `VOICES` at the top of
+`make-audio.py`.
+
+Everything renders slower than natural by default (`length_scale` 1.2), because
+A2 listening at conversational speed is hopeless. `--speed 1.35` slows it
+further; `--speed 1.0` is the voice's own pace.
 
 ## Notes on the data
 

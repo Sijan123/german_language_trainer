@@ -2,7 +2,11 @@ import { VOCAB, VOCAB_THEMES, allWords, TYPE_LABEL } from "./vocab.js";
 import { GRAMMAR, grammarById } from "./grammar-topics.js";
 import { CONV_TOPICS, CONVERSATIONS } from "./conversations.js";
 import { EN, MAIN_EN } from "./sentences-en.js";
-import { initVoices, speak, speakLine, stopSpeaking } from "./speech.js";
+import { AUDIO } from "./audio-manifest.js";
+import {
+  initVoices, sayLine, sayLineOnce, sayOnce, voiceLabels,
+  stopSpeaking, pauseSpeaking, resumeClip
+} from "./speech.js";
 
 /* ------------------------------------------------------------------ */
 /* State                                                               */
@@ -43,6 +47,10 @@ const el = {
   convMeta: $("conv-meta"),
   convLines: $("conv-lines"),
   convPlay: $("conv-play"),
+  convStop: $("conv-stop"),
+  convPrev: $("conv-prev"),
+  convNext: $("conv-next"),
+  convVoices: $("conv-voices"),
 
   screenVocab: $("screen-vocab"),
   vocabSearch: $("vocab-search"),
@@ -108,6 +116,47 @@ const SPEAKER_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
   'stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>' +
   '<path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>';
+
+/* The reload sign: play the dialogue again from this line down. */
+const REPEAT_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+  'stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline>' +
+  '<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>';
+
+/*
+ * Speaker avatars.
+ *
+ * Drawn rather than loaded: two inline SVGs cost nothing, need no files in the
+ * repo, and take their colour from the speaker's own tint through currentColor,
+ * so they stay right in dark mode and if the palette changes. They are
+ * silhouettes — the two differ in outline, not in detail, which is what still
+ * reads at 34 pixels on a phone.
+ */
+/*
+ * The face is drawn in the card colour, not in the tint. With one fill for hair
+ * and face the whole thing collapses into a blob — the shapes only read when the
+ * face is punched out of the hair, which is also what keeps the two silhouettes
+ * apart at this size.
+ */
+function avatar(hair) {
+  return '<svg class="conv-avatar" viewBox="0 0 40 40" aria-hidden="true">' +
+    '<circle class="av-bg" cx="20" cy="20" r="20"/>' +
+    '<path class="av-fg" d="' + hair + '"/>' +
+    '<circle class="av-face" cx="20" cy="17.5" r="6.2"/>' +
+    '<path class="av-fg" d="M9.4 34.6C11 29.9 15.1 26.5 20 26.5s9 3.4 10.6 8.1z"/>' +
+  '</svg>';
+}
+
+const AVATARS = {
+  // long hair falling either side of the face
+  Shruti: avatar("M20 8.6c-5 0-8.5 3.4-8.5 8.2 0 2.6.5 5.1 1.4 7l2.9-1c-.7-1.6-1.1-3.6-1.1-5.6 0-3.2 2.3-5.2 5.3-5.2s5.3 2 5.3 5.2c0 2-.4 4-1.1 5.6l2.9 1c.9-1.9 1.4-4.4 1.4-7 0-4.8-3.5-8.2-8.5-8.2z"),
+  // a short cap with the sides cut in
+  Sijan: avatar("M20 8.2c-4.6 0-8 3.2-8 7.6 0 .8.1 1.5.3 2.1l2.6-1.2c-.1-.4-.1-.7-.1-1 0-2.6 2.4-4.3 5.2-4.3s5.2 1.7 5.2 4.3c0 .3 0 .6-.1 1l2.6 1.2c.2-.6.3-1.3.3-2.1 0-4.4-3.4-7.6-8-7.6z")
+};
+
+function avatarFor(speaker) {
+  return AVATARS[speaker] || AVATARS.Shruti;
+}
 
 const ALL_WORDS = allWords(VOCAB_THEMES);
 
@@ -292,7 +341,7 @@ el.vocabList.addEventListener("click", (event) => {
   const sayBtn = event.target.closest(".speak-btn");
   if (sayBtn) {
     event.stopPropagation();
-    speak(sayBtn.dataset.say, true);        // explicit request: always audible
+    sayOnce(sayBtn.dataset.say, "Shruti", true);        // explicit request: always audible
     return;
   }
 
@@ -305,7 +354,7 @@ el.vocabList.addEventListener("click", (event) => {
   item.dataset.open = String(!open);
   detail.hidden = open;
   head.setAttribute("aria-expanded", String(!open));
-  if (!open) speak(item.querySelector(".vocab-de").textContent, state.ttsOn);
+  if (!open) sayOnce(item.querySelector(".vocab-de").textContent, "Shruti", state.ttsOn);
 });
 
 el.showEnToggle.addEventListener("click", () => {
@@ -408,7 +457,7 @@ function nextQuestion() {
   quiz.answered = false;
   quiz.options = shuffle([word].concat(distractorsFor(word, pool)));
   renderQuiz();
-  speak(word.de, state.ttsOn);
+  sayOnce(word.de, "Shruti", state.ttsOn);
 }
 
 function renderScore() {
@@ -484,7 +533,7 @@ function answerQuiz(index) {
   el.quizNext.hidden = false;
   el.quizNext.focus();
 
-  if (!correct) speak(quiz.word.de, state.ttsOn);
+  if (!correct) sayOnce(quiz.word.de, "Shruti", state.ttsOn);
 }
 
 el.quizOptions.addEventListener("click", (event) => {
@@ -493,7 +542,7 @@ el.quizOptions.addEventListener("click", (event) => {
 });
 
 el.quizNext.addEventListener("click", nextQuestion);
-el.quizSay.addEventListener("click", () => quiz.word && speak(quiz.word.de, true));
+el.quizSay.addEventListener("click", () => quiz.word && sayOnce(quiz.word.de, "Shruti", true));
 
 el.quizReset.addEventListener("click", () => {
   quiz.right = 0;
@@ -564,7 +613,7 @@ function renderGrammar() {
 
 el.grammarList.addEventListener("click", (event) => {
   const sayBtn = event.target.closest(".speak-btn");
-  if (sayBtn) { event.stopPropagation(); speak(sayBtn.dataset.say, true); return; }
+  if (sayBtn) { event.stopPropagation(); sayOnce(sayBtn.dataset.say, "Shruti", true); return; }
 
   const head = event.target.closest(".grammar-head");
   if (!head) return;
@@ -593,16 +642,76 @@ function openGrammarTopic(id) {
 /* Konversation                                                        */
 /* ------------------------------------------------------------------ */
 
-const play = { id: null, index: -1, running: false };
+/*
+ * Playback state.
+ *
+ * `phase` says what the dialogue is doing right now, which is what makes pause
+ * work: the three phases stop and continue in different ways. "beat" is the
+ * typing pause before a line appears, "speaking" is the line itself, "gap" is
+ * the breath between turns. `exact` records whether the paused line can continue
+ * mid-sentence (a rendered clip) or has to be spoken again (the browser voice).
+ */
+const play = {
+  id: null, index: -1, running: false, paused: false,
+  phase: null, exact: false, timer: null
+};
+
+/**
+ * A line's rendered audio, if it has any.
+ *
+ * The manifest says how many lines of each dialogue were rendered, so a missing
+ * clip is known in advance rather than discovered through a 404. Files are
+ * one-based and zero-padded to match what make-audio.py writes.
+ */
+function clipFor(conversationId, index) {
+  const entry = AUDIO[conversationId];
+  if (!entry) return null;
+  // A run without ffmpeg leaves WAVs, so the format is recorded per dialogue
+  // rather than assumed. A bare number is accepted as an older manifest.
+  const count = typeof entry === "number" ? entry : entry.n;
+  const ext = typeof entry === "number" ? "mp3" : (entry.ext || "mp3");
+  if (!count || index >= count) return null;
+  return "audio/" + conversationId + "/" + String(index + 1).padStart(2, "0") + "." + ext;
+}
+
+/**
+ * The play button says what pressing it will do, not what is happening — three
+ * labels for three states. Stop is a separate button and only exists while a
+ * dialogue is running, because ending playback and holding it are different
+ * intentions and one button cannot offer both.
+ */
+function renderPlayControls() {
+  if (!el.convPlay) return;
+  const phase = !play.running ? "idle" : (play.paused ? "paused" : "playing");
+  el.convPlay.dataset.on = String(phase === "playing");
+  el.convPlay.dataset.state = phase;
+  el.convPlay.textContent = phase === "idle" ? "▶  Ganzes Gespräch"
+    : phase === "playing" ? "❚❚  Pause"
+    : "▶  Weiter";
+  if (el.convStop) el.convStop.hidden = !play.running;
+  if (el.convPrev) el.convPrev.hidden = !play.running;
+  if (el.convNext) el.convNext.hidden = !play.running;
+}
 
 function stopPlayback() {
   play.running = false;
+  play.paused = false;
+  play.phase = null;
+  play.exact = false;
   play.index = -1;
+  clearTimeout(play.timer);
   stopSpeaking();
-  if (el.convPlay) el.convPlay.dataset.on = "false";
-  if (el.convPlay) el.convPlay.textContent = "▶  Ganzes Gespräch";
-  Array.prototype.forEach.call(document.querySelectorAll(".conv-line[data-now]"), (n) => {
+  renderPlayControls();
+  // Leaving reveal mode puts every line back on screen, so the dialogue can
+  // still be read and searched when it is not playing.
+  if (el.convLines) {
+    delete el.convLines.dataset.reveal;
+    delete el.convLines.dataset.paused;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".conv-line"), (n) => {
     delete n.dataset.now;
+    delete n.dataset.pending;
+    delete n.dataset.typing;
   });
 }
 
@@ -683,28 +792,52 @@ function openConversation(id) {
     '<span class="conv-topic-chip">' + escapeHtml(topic.name) + '</span>' +
     '<span class="conv-card-en gloss">' + escapeHtml(c.titleEn) + '</span>';
 
+  const voices = voiceLabels();
+  const recorded = !!AUDIO[c.id];
+  el.convVoices.textContent = recorded
+    ? "Aufnahme"
+    : (voices ? "Stimmen: " + voices : "keine deutsche Stimme installiert");
+  el.convVoices.dataset.recorded = String(recorded);
+
   el.convLines.innerHTML = c.lines.map((line, i) =>
     '<div class="conv-line" data-i="' + i + '" data-who="' + escapeHtml(line.s) + '">' +
-      '<span class="conv-who">' + escapeHtml(line.s) + '</span>' +
+      '<span class="conv-who">' + avatarFor(line.s) +
+        '<span class="conv-name">' + escapeHtml(line.s) + '</span>' +
+      '</span>' +
       '<span class="conv-bubble">' +
+        '<span class="conv-typing" aria-hidden="true"><i></i><i></i><i></i></span>' +
         '<span class="conv-de">' + escapeHtml(line.de) + '</span>' +
         '<span class="conv-en gloss">' + escapeHtml(line.en) + '</span>' +
       '</span>' +
-      '<button type="button" class="speak-btn" data-say="' + escapeHtml(line.de) + '" ' +
-        'title="Satz vorlesen" aria-label="Satz vorlesen">' + SPEAKER_SVG + '</button>' +
+      // Two different things, so two buttons: hear this one sentence, or take
+      // the dialogue back to it and carry on from there.
+      '<span class="conv-actions">' +
+        '<button type="button" class="speak-btn" data-i="' + i + '" ' +
+          'title="Satz vorlesen" aria-label="Satz vorlesen">' + SPEAKER_SVG + '</button>' +
+        '<button type="button" class="speak-btn repeat-btn" data-repeat="' + i + '" ' +
+          'title="Ab hier wiederholen" aria-label="Ab hier wiederholen">' + REPEAT_SVG + '</button>' +
+      '</span>' +
     '</div>'
   ).join("");
 
   el.convDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/** The line as the speech module wants it: text, speaker, and a clip if rendered. */
+function audibleLine(conversation, index) {
+  const line = conversation.lines[index];
+  return { de: line.de, s: line.s, clip: clipFor(conversation.id, index) };
+}
+
 /**
  * Play the whole dialogue, one line at a time.
  *
- * Sequencing has to hang off the utterance's own `end` event — a timer guessed
- * from sentence length drifts badly, and the two voices read at different
- * speeds. A line that fails to speak still advances, so a missing German voice
- * cannot strand the playback half way down the conversation.
+ * Two things are deliberate here. Sequencing hangs off the utterance's own end
+ * event rather than a timer, because sentence length is a poor predictor of
+ * speaking time and the two voices differ. And each line gets a short "typing"
+ * beat before it appears: it paces the conversation like a real exchange, and
+ * it stops you reading the reply before you have heard the question, which is
+ * what makes a fully visible transcript useless as listening practice.
  */
 function playFrom(index) {
   const c = CONVERSATIONS.find((x) => x.id === play.id);
@@ -712,26 +845,138 @@ function playFrom(index) {
   if (index >= c.lines.length) return stopPlayback();
 
   play.index = index;
+  const node = el.convLines.querySelector('.conv-line[data-i="' + index + '"]');
+  if (!node) return stopPlayback();
+
   Array.prototype.forEach.call(el.convLines.querySelectorAll(".conv-line"), (n) => {
-    if (Number(n.dataset.i) === index) n.dataset.now = "true";
-    else delete n.dataset.now;
+    delete n.dataset.now;
   });
 
-  const node = el.convLines.querySelector('.conv-line[data-i="' + index + '"]');
-  if (node) node.scrollIntoView({ behavior: "smooth", block: "center" });
+  // Show the bubble with dots in it, then swap the dots for the line.
+  delete node.dataset.pending;
+  node.dataset.typing = "true";
+  node.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  speakLine(c.lines[index].de, () => {
-    if (!play.running) return;
-    setTimeout(() => play.running && playFrom(index + 1), 350);   // a beat between turns
+  play.phase = "beat";
+  const beat = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 120 : 420;
+  play.timer = setTimeout(() => {
+    if (!play.running || play.paused) return;
+    delete node.dataset.typing;
+    node.dataset.now = "true";
+    speakCurrent();
+  }, beat);
+}
+
+/** Speak the line playback is standing on, then move to the next one. */
+function speakCurrent() {
+  const c = CONVERSATIONS.find((x) => x.id === play.id);
+  if (!c || !play.running) return;
+  const index = play.index;
+
+  play.phase = "speaking";
+  sayLine(audibleLine(c, index), () => {
+    // A pause cancels the browser voice, which fires this callback on its way
+    // out — so the guard has to check both flags, or pausing would skip a line.
+    if (!play.running || play.paused) return;
+    play.phase = "gap";
+    play.timer = setTimeout(() => {
+      if (play.running && !play.paused) playFrom(index + 1);
+    }, 350);                                              // a beat between turns
   });
 }
 
-function togglePlayback() {
-  if (play.running) return stopPlayback();
+function startPlayback() {
   play.running = true;
-  el.convPlay.dataset.on = "true";
-  el.convPlay.textContent = "■  Stopp";
+  play.paused = false;
+  renderPlayControls();
+
+  // Hide the whole transcript, then let playback bring it back line by line.
+  el.convLines.dataset.reveal = "true";
+  Array.prototype.forEach.call(el.convLines.querySelectorAll(".conv-line"), (n) => {
+    n.dataset.pending = "true";
+    delete n.dataset.typing;
+    delete n.dataset.now;
+  });
+
   playFrom(0);
+}
+
+function pausePlayback() {
+  if (!play.running || play.paused) return;
+  play.paused = true;
+  clearTimeout(play.timer);
+  play.timer = null;
+  // Only a line that is actually being spoken can be held mid-sentence; during
+  // the typing beat or the gap there is nothing playing to hold.
+  play.exact = play.phase === "speaking" ? pauseSpeaking() : false;
+  if (play.phase !== "speaking") stopSpeaking();
+  if (el.convLines) el.convLines.dataset.paused = "true";
+  renderPlayControls();
+}
+
+function resumePlayback() {
+  if (!play.running || !play.paused) return;
+  play.paused = false;
+  if (el.convLines) delete el.convLines.dataset.paused;
+  renderPlayControls();
+
+  if (play.phase === "speaking") {
+    if (play.exact && resumeClip()) return;   // a clip continues mid-sentence
+    return speakCurrent();                    // the browser voice repeats the line
+  }
+  // Paused between turns: carry on with the line that comes next. Paused during
+  // the typing beat: that line has not been heard yet, so it still starts here.
+  playFrom(play.phase === "gap" ? play.index + 1 : play.index);
+}
+
+function togglePlayback() {
+  if (!play.running) return startPlayback();
+  return play.paused ? resumePlayback() : pausePlayback();
+}
+
+/**
+ * Go back (or forward) to a line and carry on from there.
+ *
+ * This is the thing you actually want from listening practice: you missed a
+ * sentence two turns ago and you want to hear it again *in context*, not as an
+ * isolated clip. So the reload button restarts playback at that line rather than
+ * replaying it on its own — the speaker button beside it is there for the
+ * one-sentence case.
+ *
+ * Lines after the target go back into hiding. If they stayed on screen the
+ * reveal would be pointless from then on: you would be reading ahead of what you
+ * are hearing, which is exactly what the mode exists to prevent.
+ */
+function repeatFrom(index) {
+  const c = CONVERSATIONS.find((x) => x.id === play.id);
+  if (!c) return;
+  if (index < 0 || index >= c.lines.length) return stopPlayback();
+
+  clearTimeout(play.timer);
+  stopSpeaking();
+
+  play.running = true;
+  play.paused = false;
+  play.exact = false;
+  if (el.convLines) {
+    delete el.convLines.dataset.paused;
+    el.convLines.dataset.reveal = "true";
+  }
+  Array.prototype.forEach.call(el.convLines.querySelectorAll(".conv-line"), (n) => {
+    delete n.dataset.typing;
+    delete n.dataset.now;
+    if (Number(n.dataset.i) >= index) n.dataset.pending = "true";
+    else delete n.dataset.pending;
+  });
+
+  renderPlayControls();
+  playFrom(index);
+}
+
+/** One line back, one line on — the same move as the reload buttons, from the bar. */
+function stepLine(delta) {
+  if (!play.running) return;
+  repeatFrom(play.index + delta);
 }
 
 el.convList.addEventListener("click", (event) => {
@@ -740,14 +985,43 @@ el.convList.addEventListener("click", (event) => {
 });
 
 el.convLines.addEventListener("click", (event) => {
+  const repeat = event.target.closest(".repeat-btn");
+  if (repeat) return repeatFrom(Number(repeat.dataset.repeat));
+
   const btn = event.target.closest(".speak-btn");
   if (!btn) return;
+  const c = CONVERSATIONS.find((x) => x.id === play.id);
+  if (!c) return;
   stopPlayback();
-  speak(btn.dataset.say, true);       // an explicit tap always speaks
+  sayLineOnce(audibleLine(c, Number(btn.dataset.i)));   // an explicit tap always speaks
 });
 
 el.convBack.addEventListener("click", renderConvList);
 el.convPlay.addEventListener("click", togglePlayback);
+if (el.convStop) el.convStop.addEventListener("click", stopPlayback);
+if (el.convPrev) el.convPrev.addEventListener("click", () => stepLine(-1));
+if (el.convNext) el.convNext.addEventListener("click", () => stepLine(1));
+
+/*
+ * Space pauses. It is the one shortcut every media player shares, and pausing is
+ * the thing you reach for mid-sentence — repeating a line you did not catch —
+ * which is exactly when hunting for a button is worst.
+ */
+document.addEventListener("keydown", (event) => {
+  if (state.mode !== "conversation" || !play.running) return;
+  if (event.target && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName)) return;
+
+  if (event.key === " " || event.key === "Spacebar") {
+    event.preventDefault();
+    togglePlayback();
+  } else if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    stepLine(-1);
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    stepLine(1);
+  }
+});
 
 let convSearchTimer = null;
 el.convSearch.addEventListener("input", () => {
