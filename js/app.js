@@ -1,8 +1,15 @@
 import { VOCAB, VOCAB_THEMES, allWords, TYPE_LABEL } from "./vocab.js";
 import { GRAMMAR, grammarById } from "./grammar-topics.js";
 import { CONV_TOPICS, CONVERSATIONS } from "./conversations.js";
-import { EN, MAIN_EN } from "./sentences-en.js";
 import { AUDIO } from "./audio-manifest.js";
+import { clipFor } from "./clips.js";
+import { avatarFor } from "./avatars.js";
+import { escapeHtml, pickOne, shuffle, SPEAKER_SVG } from "./util.js";
+import { glossFor } from "./gloss.js";
+import * as srs from "./srs.js";
+import { initDictation, enterDictation, leaveDictation } from "./dictation.js";
+import { initWordOrder, enterWordOrder } from "./wordorder.js";
+import { initDialogue, enterDialogue, leaveDialogue } from "./dialogue.js";
 import {
   initVoices, sayLine, sayLineOnce, sayOnce, voiceLabels,
   stopSpeaking, pauseSpeaking, resumeClip
@@ -14,11 +21,14 @@ import {
 
 const state = {
   ttsOn: true,
-  mode: "conversation",     // "conversation" | "vocab" | "quiz" | "grammar"
+  // "conversation" | "dictation" | "vocab" | "quiz" | "wordorder" | "grammar"
+  mode: "conversation",
   vocabTheme: "alle",
   vocabQuery: "",
   convTopic: "alle",
   convQuery: "",
+  convMode: "manual",       // "manual" stops after every line, "auto" runs on
+  woSub: "sentences",       // Satzbau: "sentences" drill or "dialogue" role-play
   showEn: true              // show the English under every German line
 };
 
@@ -50,6 +60,9 @@ const el = {
   convStop: $("conv-stop"),
   convPrev: $("conv-prev"),
   convNext: $("conv-next"),
+  convMode: $("conv-mode"),
+  convAdvance: $("conv-advance"),
+  convAdvanceBtn: $("conv-advance-btn"),
   convVoices: $("conv-voices"),
 
   screenVocab: $("screen-vocab"),
@@ -58,10 +71,18 @@ const el = {
   vocabThemes: $("vocab-themes"),
   vocabList: $("vocab-list"),
 
+  screenDictation: $("screen-dictation"),
+  screenWordOrder: $("screen-wordorder"),
+  woSub: $("wo-sub"),
+  woSentences: $("wo-sentences"),
+  woDialogue: $("wo-dialogue"),
+
   screenQuiz: $("screen-quiz"),
   quizThemes: $("quiz-themes"),
+  quizStrip: $("quiz-strip"),
   quizScore: $("quiz-score"),
   quizReset: $("quiz-reset"),
+  srsReset: $("srs-reset"),
   quizWord: $("quiz-word"),
   quizType: $("quiz-type"),
   quizSay: $("quiz-say"),
@@ -74,21 +95,11 @@ const el = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
-function escapeHtml(s) {
-  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
-    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
-  ));
-}
-
-
-/* ------------------------------------------------------------------ */
 /* Modes                                                               */
 /* ------------------------------------------------------------------ */
 
 function setMode(mode) {
+  const leaving = state.mode;
   state.mode = mode;
   document.body.dataset.mode = mode;   // the English switch keys off this
   Array.prototype.forEach.call(el.modeTabs.querySelectorAll("button"), (b) => {
@@ -96,26 +107,52 @@ function setMode(mode) {
   });
 
   stopPlayback();
+  if (leaving === "dictation" && mode !== "dictation") leaveDictation();
+  if (leaving === "wordorder" && mode !== "wordorder") leaveDialogue();
 
   el.screenConv.hidden = mode !== "conversation";
+  el.screenDictation.hidden = mode !== "dictation";
   el.screenVocab.hidden = mode !== "vocab";
   el.screenQuiz.hidden = mode !== "quiz";
+  el.screenWordOrder.hidden = mode !== "wordorder";
   el.screenGrammar.hidden = mode !== "grammar";
 
   if (mode === "conversation") renderConvList();
+  if (mode === "dictation") enterDictation();
   if (mode === "vocab") renderVocab();
   if (mode === "quiz") { if (quiz.word) renderQuiz(); else nextQuestion(); }
+  if (mode === "wordorder") setWordOrderSub(state.woSub);
   if (mode === "grammar") renderGrammar();
 }
+
+/*
+ * Satzbau has two halves: the single-sentence drill and the dialogue role-play.
+ * They share the piece mechanic and the three levels but nothing else, so they
+ * are two modules behind one tab rather than one module with a flag in it.
+ */
+function setWordOrderSub(sub) {
+  state.woSub = sub;
+  document.body.dataset.woSub = sub;
+  Array.prototype.forEach.call(el.woSub.querySelectorAll("button"), (b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.sub === sub));
+  });
+
+  if (sub !== "dialogue") leaveDialogue();
+  el.woSentences.hidden = sub !== "sentences";
+  el.woDialogue.hidden = sub !== "dialogue";
+
+  if (sub === "dialogue") enterDialogue();
+  else enterWordOrder();
+}
+
+el.woSub.addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-sub]");
+  if (btn && btn.dataset.sub !== state.woSub) setWordOrderSub(btn.dataset.sub);
+});
 
 /* ------------------------------------------------------------------ */
 /* Vocabs                                                              */
 /* ------------------------------------------------------------------ */
-
-const SPEAKER_SVG =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
-  'stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>' +
-  '<path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>';
 
 /* The reload sign: play the dialogue again from this line down. */
 const REPEAT_SVG =
@@ -123,40 +160,6 @@ const REPEAT_SVG =
   'stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline>' +
   '<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>';
 
-/*
- * Speaker avatars.
- *
- * Drawn rather than loaded: two inline SVGs cost nothing, need no files in the
- * repo, and take their colour from the speaker's own tint through currentColor,
- * so they stay right in dark mode and if the palette changes. They are
- * silhouettes — the two differ in outline, not in detail, which is what still
- * reads at 34 pixels on a phone.
- */
-/*
- * The face is drawn in the card colour, not in the tint. With one fill for hair
- * and face the whole thing collapses into a blob — the shapes only read when the
- * face is punched out of the hair, which is also what keeps the two silhouettes
- * apart at this size.
- */
-function avatar(hair) {
-  return '<svg class="conv-avatar" viewBox="0 0 40 40" aria-hidden="true">' +
-    '<circle class="av-bg" cx="20" cy="20" r="20"/>' +
-    '<path class="av-fg" d="' + hair + '"/>' +
-    '<circle class="av-face" cx="20" cy="17.5" r="6.2"/>' +
-    '<path class="av-fg" d="M9.4 34.6C11 29.9 15.1 26.5 20 26.5s9 3.4 10.6 8.1z"/>' +
-  '</svg>';
-}
-
-const AVATARS = {
-  // long hair falling either side of the face
-  Shruti: avatar("M20 8.6c-5 0-8.5 3.4-8.5 8.2 0 2.6.5 5.1 1.4 7l2.9-1c-.7-1.6-1.1-3.6-1.1-5.6 0-3.2 2.3-5.2 5.3-5.2s5.3 2 5.3 5.2c0 2-.4 4-1.1 5.6l2.9 1c.9-1.9 1.4-4.4 1.4-7 0-4.8-3.5-8.2-8.5-8.2z"),
-  // a short cap with the sides cut in
-  Sijan: avatar("M20 8.2c-4.6 0-8 3.2-8 7.6 0 .8.1 1.5.3 2.1l2.6-1.2c-.1-.4-.1-.7-.1-1 0-2.6 2.4-4.3 5.2-4.3s5.2 1.7 5.2 4.3c0 .3 0 .6-.1 1l2.6 1.2c.2-.6.3-1.3.3-2.1 0-4.4-3.4-7.6-8-7.6z")
-};
-
-function avatarFor(speaker) {
-  return AVATARS[speaker] || AVATARS.Shruti;
-}
 
 const ALL_WORDS = allWords(VOCAB_THEMES);
 
@@ -224,61 +227,6 @@ function vocabMatches() {
   });
 }
 
-
-/**
- * English gloss for a German example sentence.
- *
- * A Nebensatz gloss is derived rather than stored: the weil-clause says the same
- * thing as its `simple` sentence, only with the verb at the end. So
- * "Ich brauche gute Schuhe, weil ich jeden Morgen laufe" is the English for the
- * main clause, plus "because", plus the gloss of "Ich laufe jeden Morgen".
- */
-
-/*
- * Embedding a sentence drops its opening capital — "My family is big" becomes
- * "… that my family is big" — except for words English capitalises anywhere in
- * a sentence. Three kinds have to survive: "I" and its contractions; the days
- * and months; and proper nouns, which we don't list by hand but read off the
- * glosses themselves — a name like "Berlin" or "December" also shows up
- * capitalised in the middle of some other sentence, an ordinary word never does.
- */
-const ALWAYS_CAPITAL = (() => {
-  const set = new Set([
-    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-    "january", "february", "march", "april", "may", "june", "july",
-    "august", "september", "october", "november", "december"
-  ]);
-  for (const value of Object.values(EN)) {
-    const words = value.split(/\s+/);
-    for (let i = 1; i < words.length; i++) {
-      const w = words[i].replace(/[^A-Za-z0-9']/g, "");
-      if (w && w[0] >= "A" && w[0] <= "Z") set.add(w.toLowerCase());
-    }
-  }
-  return set;
-})();
-
-function uncapitalise(text) {
-  const end = text.search(/[^A-Za-z0-9']/);
-  const first = end === -1 ? text : text.slice(0, end);
-  const key = first.toLowerCase();
-  if (key === "i" || key.startsWith("i'") || ALWAYS_CAPITAL.has(key)) return text;
-  return text.charAt(0).toLowerCase() + text.slice(1);
-}
-
-function glossFor(sentence, simpleSentence) {
-  if (!sentence) return "";
-  const direct = EN[sentence];
-  if (direct) return direct;
-
-  const split = sentence.indexOf(", weil ");
-  if (split > 0 && simpleSentence) {
-    const base = EN[simpleSentence];
-    const main = MAIN_EN[sentence.slice(0, split)];
-    if (base && main) return main + " because " + uncapitalise(base);
-  }
-  return "";
-}
 
 function vocabRow(label, text, html, tone, gloss) {
   return '<div class="vocab-row">' +
@@ -398,18 +346,10 @@ function quizPool() {
   return ALL_WORDS.filter((w) => w.en && (quiz.theme === "alle" || w.themeId === quiz.theme));
 }
 
-function pickOne(list) {
-  return list[Math.floor(Math.random() * list.length)];
-}
-
-function shuffle(list) {
-  const out = list.slice();
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
+/* The Quiz's own record of a word. Diktat and Satzbau key the same word
+   differently on purpose — recognising "der Wecker" and being able to spell it
+   from dictation are not the same thing to have learnt. */
+const quizKey = (w) => "v:" + w.de;
 
 /**
  * Three wrong answers, drawn from the same word type where possible.
@@ -438,6 +378,16 @@ function distractorsFor(word, pool) {
   return picked;
 }
 
+/*
+ * Which word to ask next.
+ *
+ * This used to be a uniform random draw, which never converges: with 1009 words
+ * you answer the easy ones over and over and the dozen you actually don't know
+ * come round no more often than the rest. The box system in srs.js decides
+ * instead — overdue first, weakest of those first, one new word in four — and
+ * `recent` keeps a word that just went back to box 1 from reappearing
+ * immediately.
+ */
 function nextQuestion() {
   const pool = quizPool();
   if (pool.length < 4) {
@@ -446,11 +396,9 @@ function nextQuestion() {
     return;
   }
 
+  const word = srs.pick(pool, quizKey, quiz.recent) || pickOne(pool);
   const avoid = Math.min(25, Math.floor(pool.length / 3));
-  let word = pickOne(pool);
-  for (let tries = 0; tries < 12 && quiz.recent.indexOf(word.de) >= 0; tries++) word = pickOne(pool);
-
-  quiz.recent.push(word.de);
+  quiz.recent.push(quizKey(word));
   while (quiz.recent.length > avoid) quiz.recent.shift();
 
   quiz.word = word;
@@ -471,12 +419,17 @@ function renderScore() {
       : '<span class="score-pill rate">noch keine Frage</span>');
 }
 
+function renderQuizStrip() {
+  el.quizStrip.innerHTML = srs.stripHtml(srs.stats(quizPool(), quizKey));
+}
+
 function renderQuiz() {
   renderThemeChips(el.quizThemes, quiz.theme, (id) => {
     quiz.theme = id;
     quiz.recent = [];
     nextQuestion();
   });
+  renderQuizStrip();
   renderScore();
 
   if (!quiz.word) {
@@ -511,8 +464,10 @@ function answerQuiz(index) {
   quiz.answered = true;
   const correct = chosen.en === quiz.word.en;
   if (correct) quiz.right++; else quiz.wrong++;
+  const rec = srs.grade(quizKey(quiz.word), correct ? "right" : "wrong");
   saveScore();
   renderScore();
+  renderQuizStrip();
 
   Array.prototype.forEach.call(el.quizOptions.querySelectorAll(".quiz-opt"), (btn) => {
     const i = Number(btn.dataset.i);
@@ -528,7 +483,8 @@ function answerQuiz(index) {
       (correct ? "Richtig." : "Leider falsch — richtig ist „" + escapeHtml(quiz.word.en) + "“.") +
     '</span>' +
     '<span class="example">' + highlight(quiz.word.simple, quiz.word.de, false) + '</span>' +
-    (gloss ? '<span class="example-en">' + escapeHtml(gloss) + '</span>' : "");
+    (gloss ? '<span class="example-en">' + escapeHtml(gloss) + '</span>' : "") +
+    '<span class="srs-note">Fach ' + rec.b + ' von ' + srs.MAX_BOX + ' · ' + srs.dueLabel(rec) + '</span>';
   el.quizFeedback.hidden = false;
   el.quizNext.hidden = false;
   el.quizNext.focus();
@@ -549,6 +505,21 @@ el.quizReset.addEventListener("click", () => {
   quiz.wrong = 0;
   saveScore();
   renderScore();
+});
+
+/*
+ * Throwing away the boxes throws away weeks of answers, and it is one button
+ * along from the harmless counter reset — so it asks first.
+ */
+el.srsReset.addEventListener("click", () => {
+  const ok = window.confirm(
+    "Der gesamte Lernfortschritt wird gelöscht: alle Fächer in Quiz, Diktat und Satzbau. " +
+    "Das lässt sich nicht rückgängig machen."
+  );
+  if (!ok) return;
+  srs.resetAll();
+  quiz.recent = [];
+  renderQuizStrip();
 });
 
 document.addEventListener("keydown", (event) => {
@@ -646,51 +617,129 @@ function openGrammarTopic(id) {
  * Playback state.
  *
  * `phase` says what the dialogue is doing right now, which is what makes pause
- * work: the three phases stop and continue in different ways. "beat" is the
- * typing pause before a line appears, "speaking" is the line itself, "gap" is
- * the breath between turns. `exact` records whether the paused line can continue
- * mid-sentence (a rendered clip) or has to be spoken again (the browser voice).
+ * work: the phases stop and continue in different ways. "beat" is the typing
+ * pause before a line appears, "speaking" is the line itself, "gap" is the
+ * breath between turns, and "waiting" is a finished line in Satz-für-Satz mode
+ * holding still until you ask for the next one. `exact` records whether the
+ * paused line can continue mid-sentence (a rendered clip) or has to be spoken
+ * again (the browser voice).
  */
 const play = {
   id: null, index: -1, running: false, paused: false,
   phase: null, exact: false, timer: null
 };
 
-/**
- * A line's rendered audio, if it has any.
+/*
+ * How a dialogue plays.
  *
- * The manifest says how many lines of each dialogue were rendered, so a missing
- * clip is known in advance rather than discovered through a 404. Files are
- * one-based and zero-padded to match what make-audio.py writes.
+ * "manual" stops after every line and waits; "auto" runs the whole thing
+ * through. Manual is the default because the automatic version is a listening
+ * exercise, not a reading one — the line goes past, you catch about half of it,
+ * and there is nowhere to stand and look at the rest. Stopping after each turn
+ * is what makes the transcript worth having.
+ *
+ * The choice is remembered, so the default applies to a first visit rather than
+ * being re-imposed on someone who has already decided otherwise.
  */
-function clipFor(conversationId, index) {
-  const entry = AUDIO[conversationId];
-  if (!entry) return null;
-  // A run without ffmpeg leaves WAVs, so the format is recorded per dialogue
-  // rather than assumed. A bare number is accepted as an older manifest.
-  const count = typeof entry === "number" ? entry : entry.n;
-  const ext = typeof entry === "number" ? "mp3" : (entry.ext || "mp3");
-  if (!count || index >= count) return null;
-  return "audio/" + conversationId + "/" + String(index + 1).padStart(2, "0") + "." + ext;
+const CONV_MODE_KEY = "a2trainer.conv.mode";
+
+function loadConvMode() {
+  try {
+    return localStorage.getItem(CONV_MODE_KEY) === "auto" ? "auto" : "manual";
+  } catch (e) {
+    return "manual";
+  }
+}
+
+function saveConvMode() {
+  try { localStorage.setItem(CONV_MODE_KEY, state.convMode); } catch (e) { /* optional */ }
+}
+
+function currentConversation() {
+  return CONVERSATIONS.find((x) => x.id === play.id) || null;
+}
+
+/** True once the line on screen is the last one there is. */
+function atLastLine() {
+  const c = currentConversation();
+  return !!c && play.index >= c.lines.length - 1;
+}
+
+function renderConvMode() {
+  if (!el.convMode) return;
+  Array.prototype.forEach.call(el.convMode.querySelectorAll("button"), (b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.cmode === state.convMode));
+  });
 }
 
 /**
- * The play button says what pressing it will do, not what is happening — three
- * labels for three states. Stop is a separate button and only exists while a
- * dialogue is running, because ending playback and holding it are different
- * intentions and one button cannot offer both.
+ * The play button says what pressing it will do, not what is happening.
+ *
+ * Once a dialogue is stepping, the advance moves out of the top bar and down
+ * under the transcript: it is pressed a dozen times per dialogue, and the bar it
+ * used to live in gets pushed off a phone screen by the third or fourth line.
+ * The starting press is the one that stays at the top, because until something
+ * is playing there is no last line to sit under.
+ *
+ * There is no pause state in Satz-für-Satz mode — a dialogue that stops after
+ * every line has nothing to pause — and the last line offers to finish instead
+ * of to advance.
  */
 function renderPlayControls() {
   if (!el.convPlay) return;
+  const manual = state.convMode === "manual";
   const phase = !play.running ? "idle" : (play.paused ? "paused" : "playing");
+  const stepping = manual && play.running;
+
   el.convPlay.dataset.on = String(phase === "playing");
   el.convPlay.dataset.state = phase;
-  el.convPlay.textContent = phase === "idle" ? "▶  Ganzes Gespräch"
-    : phase === "playing" ? "❚❚  Pause"
-    : "▶  Weiter";
+
+  if (!play.running) {
+    el.convPlay.textContent = manual ? "▶  Gespräch starten" : "▶  Ganzes Gespräch";
+  } else if (!manual) {
+    el.convPlay.textContent = phase === "playing" ? "❚❚  Pause" : "▶  Weiter";
+  }
+
+  // One advance control, never two: while it is down by the transcript the top
+  // one is gone rather than sitting there saying the same thing.
+  el.convPlay.hidden = stepping;
+  if (el.convAdvance) el.convAdvance.hidden = !stepping;
+  if (el.convAdvanceBtn && stepping) {
+    el.convAdvanceBtn.textContent =
+      atLastLine() && play.phase === "waiting" ? "✓  Gespräch beenden" : "Nächster Satz →";
+  }
+
   if (el.convStop) el.convStop.hidden = !play.running;
   if (el.convPrev) el.convPrev.hidden = !play.running;
-  if (el.convNext) el.convNext.hidden = !play.running;
+  // Forward is what the advance button already does in manual mode; two
+  // controls for one move is just a thing to wonder about.
+  if (el.convNext) el.convNext.hidden = !play.running || manual;
+}
+
+/**
+ * Switch between stepping and running through, without losing your place.
+ *
+ * Flipping mid-dialogue does the obvious thing in both directions: going
+ * automatic releases a line that was waiting, and going manual cancels the gap
+ * before the next line so the dialogue stops where it stands.
+ */
+function setConvMode(mode) {
+  if (mode !== "manual" && mode !== "auto") return;
+  if (mode === state.convMode) return;
+  state.convMode = mode;
+  saveConvMode();
+  renderConvMode();
+
+  if (play.running && !play.paused) {
+    if (mode === "manual" && play.phase === "gap") {
+      clearTimeout(play.timer);
+      play.timer = null;
+      play.phase = "waiting";
+    } else if (mode === "auto" && play.phase === "waiting") {
+      scheduleNextLine(play.index);
+    }
+  }
+  renderPlayControls();
 }
 
 function stopPlayback() {
@@ -707,6 +756,7 @@ function stopPlayback() {
   if (el.convLines) {
     delete el.convLines.dataset.reveal;
     delete el.convLines.dataset.paused;
+    delete el.convLines.dataset.waiting;
   }
   Array.prototype.forEach.call(document.querySelectorAll(".conv-line"), (n) => {
     delete n.dataset.now;
@@ -855,6 +905,7 @@ function playFrom(index) {
   // Show the bubble with dots in it, then swap the dots for the line.
   delete node.dataset.pending;
   node.dataset.typing = "true";
+  if (el.convLines) delete el.convLines.dataset.waiting;
   node.scrollIntoView({ behavior: "smooth", block: "center" });
 
   play.phase = "beat";
@@ -867,21 +918,41 @@ function playFrom(index) {
   }, beat);
 }
 
-/** Speak the line playback is standing on, then move to the next one. */
+/** The breath between two turns, after which the next line starts by itself. */
+function scheduleNextLine(index) {
+  play.phase = "gap";
+  clearTimeout(play.timer);
+  play.timer = setTimeout(() => {
+    if (play.running && !play.paused) playFrom(index + 1);
+  }, 350);
+}
+
+/**
+ * Speak the line playback is standing on, then either move on or stand still.
+ *
+ * Which of the two is the whole difference between the modes, and it is decided
+ * here rather than at the start, so switching mode mid-dialogue takes effect on
+ * the very next line instead of at the next restart.
+ */
 function speakCurrent() {
-  const c = CONVERSATIONS.find((x) => x.id === play.id);
+  const c = currentConversation();
   if (!c || !play.running) return;
   const index = play.index;
 
   play.phase = "speaking";
+  renderPlayControls();
   sayLine(audibleLine(c, index), () => {
     // A pause cancels the browser voice, which fires this callback on its way
     // out — so the guard has to check both flags, or pausing would skip a line.
     if (!play.running || play.paused) return;
-    play.phase = "gap";
-    play.timer = setTimeout(() => {
-      if (play.running && !play.paused) playFrom(index + 1);
-    }, 350);                                              // a beat between turns
+
+    if (state.convMode === "manual") {
+      play.phase = "waiting";
+      if (el.convLines) el.convLines.dataset.waiting = "true";
+      renderPlayControls();
+      return;
+    }
+    scheduleNextLine(index);
   });
 }
 
@@ -929,8 +1000,17 @@ function resumePlayback() {
   playFrom(play.phase === "gap" ? play.index + 1 : play.index);
 }
 
+/**
+ * What the main button and the space bar do.
+ *
+ * Three different jobs behind one control, but only one of them is ever on
+ * offer at a time: start it, step it on, or hold it. Stepping on while a line is
+ * still being spoken cuts it short and moves — an impatient tap should not have
+ * to wait for the sentence to finish.
+ */
 function togglePlayback() {
   if (!play.running) return startPlayback();
+  if (state.convMode === "manual") return stepLine(1);
   return play.paused ? resumePlayback() : pausePlayback();
 }
 
@@ -998,6 +1078,13 @@ el.convLines.addEventListener("click", (event) => {
 
 el.convBack.addEventListener("click", renderConvList);
 el.convPlay.addEventListener("click", togglePlayback);
+if (el.convAdvanceBtn) el.convAdvanceBtn.addEventListener("click", togglePlayback);
+if (el.convMode) {
+  el.convMode.addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-cmode]");
+    if (btn) setConvMode(btn.dataset.cmode);
+  });
+}
 if (el.convStop) el.convStop.addEventListener("click", stopPlayback);
 if (el.convPrev) el.convPrev.addEventListener("click", () => stepLine(-1));
 if (el.convNext) el.convNext.addEventListener("click", () => stepLine(1));
@@ -1049,5 +1136,31 @@ el.soundToggle.addEventListener("click", () => {
 /* ------------------------------------------------------------------ */
 
 initVoices();
+
+state.convMode = loadConvMode();
+renderConvMode();
+renderPlayControls();
+
+/*
+ * Diktat and Satzbau own their screens, so they get the handles they need and
+ * the few things only app.js knows — which mode is showing, whether sound is
+ * on, and how to open a grammar topic.
+ */
+initDictation({
+  getMode: () => state.mode,
+  isSoundOn: () => state.ttsOn
+});
+initWordOrder({
+  getMode: () => state.mode,
+  getSub: () => state.woSub,
+  isSoundOn: () => state.ttsOn,
+  openGrammarTopic: openGrammarTopic
+});
+initDialogue({
+  getMode: () => state.mode,
+  getSub: () => state.woSub,
+  isSoundOn: () => state.ttsOn
+});
+
 document.body.dataset.hideEn = state.showEn ? "false" : "true";
 setMode(state.mode);

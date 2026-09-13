@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="css/style.css?v=2026-09-13d">
+<link rel="stylesheet" href="css/style.css?v=2026-09-13i">
 </head>
 <body>
 <div class="wrap">
@@ -22,8 +22,10 @@
 
   <nav class="mode-tabs" id="mode-tabs">
     <button type="button" data-mode="conversation" class="active">Gespräche</button>
+    <button type="button" data-mode="dictation">Diktat</button>
     <button type="button" data-mode="vocab">Vokabeln</button>
     <button type="button" data-mode="quiz">Quiz</button>
+    <button type="button" data-mode="wordorder">Satzbau</button>
     <button type="button" data-mode="grammar">Grammatik</button>
   </nav>
 
@@ -40,7 +42,7 @@
         <span class="vocab-count" id="conv-count"></span>
       </div>
       <div class="theme-chips" id="conv-topics"></div>
-      <p class="vocab-hint">Alltagsgespräche zwischen Shruti und Sijan, Niveau&nbsp;A2. Tippe auf ein Gespräch: jeder Satz einzeln anhörbar, mit englischer Übersetzung. Beim Abspielen pausiert die <kbd>Leertaste</kbd>, <kbd>←</kbd> und <kbd>→</kbd> gehen einen Satz zurück oder vor, und das ↻ neben einem Satz wiederholt ab dort.</p>
+      <p class="vocab-hint">Alltagsgespräche zwischen Shruti und Sijan, Niveau&nbsp;A2. Tippe auf ein Gespräch: jeder Satz einzeln anhörbar, mit englischer Übersetzung. <strong>Satz für Satz</strong> hält nach jedem Satz an, bis du weitergehst — so bleibt Zeit, den Satz wirklich anzusehen; <strong>Automatisch</strong> spielt das ganze Gespräch durch. Die <kbd>Leertaste</kbd> geht weiter beziehungsweise pausiert, <kbd>←</kbd> und <kbd>→</kbd> gehen einen Satz zurück oder vor, und das ↻ neben einem Satz wiederholt ab dort.</p>
       <div class="conv-list" id="conv-list"></div>
     </div>
 
@@ -48,9 +50,13 @@
       <div class="conv-detail-top">
         <button class="back-link" id="conv-back">← Gespräche</button>
         <span class="conv-voices" id="conv-voices" data-recorded="false"></span>
+        <div class="conv-mode" id="conv-mode" role="group" aria-label="Wiedergabe">
+          <button type="button" data-cmode="manual" aria-pressed="true">Satz für Satz</button>
+          <button type="button" data-cmode="auto" aria-pressed="false">Automatisch</button>
+        </div>
         <div class="conv-controls">
           <button class="btn conv-step" id="conv-prev" title="Satz zurück" aria-label="Einen Satz zurück" hidden>↺</button>
-          <button class="btn btn-primary conv-play" id="conv-play" data-on="false" data-state="idle">▶&nbsp; Ganzes Gespräch</button>
+          <button class="btn btn-primary conv-play" id="conv-play" data-on="false" data-state="idle">▶&nbsp; Gespräch starten</button>
           <button class="btn conv-step" id="conv-next" title="Satz vor" aria-label="Einen Satz vor" hidden>↻</button>
           <button class="btn conv-stop" id="conv-stop" title="Wiedergabe beenden" aria-label="Wiedergabe beenden" hidden>■</button>
         </div>
@@ -58,6 +64,13 @@
       <h2 class="conv-title" id="conv-title"></h2>
       <div class="conv-meta" id="conv-meta"></div>
       <div class="conv-lines" id="conv-lines"></div>
+
+      <!-- Satz für Satz: the advance sits under the last revealed line, where
+           the reading is, rather than in the bar at the top that a growing
+           conversation pushes off a phone screen. -->
+      <div class="conv-advance" id="conv-advance" hidden>
+        <button type="button" class="btn btn-primary" id="conv-advance-btn">Nächster Satz →</button>
+      </div>
     </div>
 
   </section>
@@ -73,11 +86,54 @@
     <div class="vocab-list" id="vocab-list"></div>
   </section>
 
+  <!-- ============ DIKTAT ============ -->
+  <section id="screen-dictation" hidden>
+    <div class="srs-strip" id="dict-strip"></div>
+    <div class="quiz-bar">
+      <div class="score" id="dict-session" aria-live="polite"></div>
+      <div class="bar-actions">
+        <button type="button" class="en-toggle" id="dict-recorded" data-on="false" aria-pressed="false">Nur Aufnahmen</button>
+        <button type="button" class="btn btn-ghost" id="dict-reset">Sitzung zurücksetzen</button>
+      </div>
+    </div>
+    <div class="theme-chips" id="dict-topics"></div>
+    <p class="vocab-hint">Hör den Satz an und schreib ihn auf. Umlaute, ß und die Großschreibung zählen mit — eine Antwort, die nur daran scheitert, gilt als „fast“. <kbd>Enter</kbd> prüft, <kbd>Alt</kbd>+<kbd>R</kbd> spielt noch einmal ab.</p>
+
+    <div class="quiz-card dict-card" id="dict-card">
+      <div class="quiz-head">
+        <span class="quiz-kicker">Hör zu und schreib mit</span>
+        <span class="quiz-type" id="dict-source"></span>
+        <button type="button" class="btn btn-ghost hint-btn" id="dict-hint">Übersetzung zeigen</button>
+      </div>
+
+      <div class="dict-play-row">
+        <button type="button" class="btn btn-primary dict-play" id="dict-play" data-state="idle">▶&nbsp; Anhören</button>
+        <span class="dict-plays" id="dict-plays" aria-live="polite"></span>
+      </div>
+      <p class="dict-en gloss-always" id="dict-en" hidden></p>
+
+      <textarea id="dict-input" rows="2" spellcheck="false" autocapitalize="sentences"
+                lang="de" placeholder="Was hast du gehört?" aria-label="Was hast du gehört?"></textarea>
+
+      <div class="actions-row">
+        <button type="button" class="btn btn-ghost" id="dict-skip">Überspringen</button>
+        <button type="button" class="btn btn-primary" id="dict-check">Prüfen</button>
+        <button type="button" class="btn btn-primary" id="dict-next" hidden>Weiter →</button>
+      </div>
+
+      <div class="feedback" id="dict-result" hidden></div>
+    </div>
+  </section>
+
   <!-- ============ QUIZ ============ -->
   <section id="screen-quiz" hidden>
+    <div class="srs-strip" id="quiz-strip"></div>
     <div class="quiz-bar">
       <div class="score" id="quiz-score" aria-live="polite"></div>
-      <button type="button" class="btn btn-ghost" id="quiz-reset">Zähler zurücksetzen</button>
+      <div class="bar-actions">
+        <button type="button" class="btn btn-ghost" id="quiz-reset">Zähler zurücksetzen</button>
+        <button type="button" class="btn btn-ghost" id="srs-reset">Lernfortschritt löschen</button>
+      </div>
     </div>
     <div class="theme-chips" id="quiz-themes"></div>
 
@@ -97,17 +153,114 @@
     </div>
   </section>
 
+  <!-- ============ SATZBAU ============ -->
+  <section id="screen-wordorder" hidden>
+
+    <div class="theme-chips seg-chips wo-sub" id="wo-sub">
+      <button type="button" data-sub="sentences" aria-pressed="true">Einzelsätze</button>
+      <button type="button" data-sub="dialogue" aria-pressed="false">Gespräch</button>
+    </div>
+
+    <div id="wo-sentences">
+    <div class="srs-strip" id="wo-strip"></div>
+    <div class="quiz-bar">
+      <div class="score" id="wo-session" aria-live="polite"></div>
+      <button type="button" class="btn btn-ghost" id="wo-reset">Sitzung zurücksetzen</button>
+    </div>
+    <div class="theme-chips seg-chips" id="wo-kinds"></div>
+    <div class="theme-chips" id="wo-themes"></div>
+    <p class="vocab-hint">Die Wörter sind durcheinander — tippe sie in der richtigen Reihenfolge an. Satzzeichen und der Punkt am Ende fehlen mit Absicht: sie würden verraten, welches Wort zuletzt kommt. Wenn du nicht weiterkommst, zeigt „Übersetzung zeigen“ den englischen Satz. <kbd>Rücktaste</kbd> nimmt das letzte Wort zurück, <kbd>Enter</kbd> prüft.</p>
+
+    <div class="quiz-card wo-card" id="wo-card">
+      <div class="quiz-head">
+        <span class="quiz-kicker">Bring den Satz in Ordnung</span>
+        <span class="quiz-type" id="wo-prompt"></span>
+        <button type="button" class="btn btn-ghost hint-btn" id="wo-hint">Übersetzung zeigen</button>
+      </div>
+      <p class="wo-en gloss-always" id="wo-en" hidden></p>
+
+      <div class="wo-level-row">
+        <span class="wo-level-label">Stufe</span>
+        <div class="theme-chips seg-chips wo-levels" id="wo-levels" role="group" aria-label="Stufe"></div>
+      </div>
+      <p class="wo-level-note">Stufe&nbsp;1 mischt jedes Wort einzeln. Stufe&nbsp;2 und&nbsp;3 hängen je zwei oder drei richtige Wörter aneinander — weniger Teile, also leichter. Jeder Satz fängt wieder bei Stufe&nbsp;1 an.</p>
+
+      <div class="wo-slot" id="wo-answer" aria-label="Dein Satz"></div>
+      <div class="wo-bank" id="wo-bank" aria-label="Wörter"></div>
+
+      <div class="actions-row">
+        <button type="button" class="btn btn-ghost" id="wo-clear">Zurücksetzen</button>
+        <button type="button" class="btn btn-primary" id="wo-check">Prüfen</button>
+        <button type="button" class="btn btn-primary" id="wo-next" hidden>Weiter →</button>
+      </div>
+
+      <div class="feedback" id="wo-result" hidden></div>
+    </div>
+    </div>
+
+    <!-- ---- Gespräch: hold up one side of a real conversation ---- -->
+    <div id="wo-dialogue" hidden>
+
+      <div id="dlg-setup">
+        <div class="srs-strip" id="dlg-strip"></div>
+        <p class="vocab-hint">Wähle, wer du bist — dann führst du das Gespräch: die Sätze der anderen Person hörst du, deine eigenen baust du aus den Wortteilen. Die drei Stufen gelten hier genauso, und jeder Satz fängt wieder bei Stufe&nbsp;1 an.</p>
+        <div class="dlg-roles" id="dlg-roles"></div>
+        <div class="vocab-bar">
+          <span class="vocab-count" id="dlg-count"></span>
+        </div>
+        <div class="theme-chips" id="dlg-topics"></div>
+        <div class="conv-list" id="dlg-list"></div>
+      </div>
+
+      <div class="conv-detail dlg-run" id="dlg-run" hidden>
+        <div class="conv-detail-top">
+          <button class="back-link" id="dlg-back">← Gespräche</button>
+          <span class="dlg-progress" id="dlg-progress"></span>
+        </div>
+        <h2 class="conv-title" id="dlg-title"></h2>
+        <div class="conv-meta" id="dlg-meta"></div>
+        <div class="conv-lines" id="dlg-lines"></div>
+
+        <div class="dlg-builder" id="dlg-builder" hidden>
+          <div class="dlg-turn" id="dlg-turn"></div>
+
+          <div class="wo-level-row">
+            <span class="wo-level-label">Stufe</span>
+            <div class="theme-chips seg-chips wo-levels" id="dlg-levels"></div>
+          </div>
+
+          <div class="wo-slot" id="dlg-answer" aria-label="Dein Satz"></div>
+          <div class="wo-bank" id="dlg-bank" aria-label="Wörter"></div>
+          <p class="wo-en gloss-always" id="dlg-en" hidden></p>
+
+          <div class="actions-row">
+            <button type="button" class="btn btn-ghost" id="dlg-hint">Übersetzung zeigen</button>
+            <button type="button" class="btn btn-ghost" id="dlg-skip">Aufgeben</button>
+            <button type="button" class="btn btn-ghost" id="dlg-clear">Zurücksetzen</button>
+            <button type="button" class="btn btn-primary" id="dlg-check">Prüfen</button>
+            <button type="button" class="btn btn-primary" id="dlg-next" hidden>Weiter →</button>
+          </div>
+
+          <div class="feedback" id="dlg-result" hidden></div>
+        </div>
+
+        <div class="summary-card dlg-summary" id="dlg-summary" hidden></div>
+      </div>
+
+    </div>
+  </section>
+
   <!-- ============ GRAMMATIK ============ -->
   <section id="screen-grammar" hidden>
     <p class="vocab-hint">A2-Grammatik nach Themen. Auf ein Thema tippen: Regel, Muster, Beispielsätze und der Fehler, den man dabei typischerweise macht.</p>
     <div class="grammar-list" id="grammar-list"></div>
   </section>
 
-  <footer class="hint">Alles läuft lokal — die Gespräche, die Vokabeln und die Sprachausgabe. Nichts verlässt deinen Rechner.
-    <span class="build">Build 2026-09-13d · Avatare</span>
+  <footer class="hint">Alles läuft lokal — die Gespräche, die Vokabeln, die Sprachausgabe und dein Lernfortschritt. Nichts verlässt deinen Rechner.
+    <span class="build">Build 2026-09-13i · Satzbau im Gespräch</span>
   </footer>
 </div>
 
-<script type="module" src="js/app.js?v=2026-09-13d"></script>
+<script type="module" src="js/app.js?v=2026-09-13i"></script>
 </body>
 </html>
