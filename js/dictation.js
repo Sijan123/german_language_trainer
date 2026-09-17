@@ -308,13 +308,13 @@ function playItem() {
   dict.playing = true;
   dict.plays++;
   el.play.dataset.state = "playing";
-  el.play.textContent = "♪  Läuft …";
+  el.play.textContent = "♪︎  Läuft …";
   renderPlays();
 
   sayLine({ de: dict.item.de, s: dict.item.s, clip: dict.item.clip }, () => {
     dict.playing = false;
     el.play.dataset.state = "idle";
-    el.play.textContent = dict.plays ? "▶  Nochmal" : "▶  Anhören";
+    el.play.textContent = dict.plays ? "▶︎  Nochmal" : "▶︎  Anhören";
   });
 }
 
@@ -338,7 +338,7 @@ function nextItem() {
   renderStrip();
   renderCard();
   el.play.dataset.state = "idle";
-  el.play.textContent = "▶  Anhören";
+  el.play.textContent = "▶︎  Anhören";
 
   if (dict.item) {
     playItem();
@@ -497,5 +497,5 @@ export function enterDictation() {
 export function leaveDictation() {
   stopSpeaking();
   dict.playing = false;
-  if (el.play) { el.play.dataset.state = "idle"; el.play.textContent = dict.plays ? "▶  Nochmal" : "▶  Anhören"; }
+  if (el.play) { el.play.dataset.state = "idle"; el.play.textContent = dict.plays ? "▶︎  Nochmal" : "▶︎  Anhören"; }
 }

@@ -7,6 +7,8 @@ import { avatarFor } from "./avatars.js";
 import { escapeHtml, pickOne, shuffle, SPEAKER_SVG } from "./util.js";
 import { glossFor } from "./gloss.js";
 import * as srs from "./srs.js";
+import * as stage from "./stage.js";
+import * as lipsync from "./lipsync.js";
 import { initDictation, enterDictation, leaveDictation } from "./dictation.js";
 import { initWordOrder, enterWordOrder } from "./wordorder.js";
 import { initDialogue, enterDialogue, leaveDialogue } from "./dialogue.js";
@@ -28,6 +30,7 @@ const state = {
   convTopic: "alle",
   convQuery: "",
   convMode: "manual",       // "manual" stops after every line, "auto" runs on
+  convStage: false,         // draw the speakers, and move their mouths with the audio
   woSub: "sentences",       // Satzbau: "sentences" drill or "dialogue" role-play
   showEn: true              // show the English under every German line
 };
@@ -61,6 +64,10 @@ const el = {
   convPrev: $("conv-prev"),
   convNext: $("conv-next"),
   convMode: $("conv-mode"),
+  convStageToggle: $("conv-stage-toggle"),
+  convStage: $("conv-stage"),
+  convStageCanvas: $("conv-stage-canvas"),
+  convStageNote: $("conv-stage-note"),
   convAdvance: $("conv-advance"),
   convAdvanceBtn: $("conv-advance-btn"),
   convVoices: $("conv-voices"),
@@ -107,6 +114,7 @@ function setMode(mode) {
   });
 
   stopPlayback();
+  if (leaving === "conversation" && mode !== "conversation") closeStage();
   if (leaving === "dictation" && mode !== "dictation") leaveDictation();
   if (leaving === "wordorder" && mode !== "wordorder") leaveDialogue();
 
@@ -655,6 +663,102 @@ function saveConvMode() {
   try { localStorage.setItem(CONV_MODE_KEY, state.convMode); } catch (e) { /* optional */ }
 }
 
+/* ------------------------------------------------------------------ */
+/* Die Bühne                                                           */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Off by default, and remembered once turned on.
+ *
+ * Off is the right default for three reasons and only one of them is the 383 KB
+ * renderer. The second is that the stage rebuilds how audio reaches the
+ * speakers — see lipsync.js — which is not a thing to do to someone who did not
+ * ask. The third is that Gespräche already works; the stage is an experiment
+ * about whether watching a mouth helps at A2, and an experiment that switches
+ * itself on is not one you can judge.
+ */
+const CONV_STAGE_KEY = "a2trainer.conv.stage";
+
+function loadConvStage() {
+  try { return localStorage.getItem(CONV_STAGE_KEY) === "on"; } catch (e) { return false; }
+}
+
+function saveConvStage() {
+  try { localStorage.setItem(CONV_STAGE_KEY, state.convStage ? "on" : "off"); } catch (e) { /* optional */ }
+}
+
+function renderStageToggle() {
+  if (!el.convStageToggle) return;
+  el.convStageToggle.dataset.on = String(state.convStage);
+  el.convStageToggle.setAttribute("aria-pressed", String(state.convStage));
+}
+
+function stageNote(text) {
+  if (!el.convStageNote) return;
+  el.convStageNote.textContent = text || "";
+  el.convStageNote.hidden = !text;
+}
+
+/**
+ * Show the stage for the dialogue that is open, building it if this is the
+ * first time. Silently does nothing when the toggle is off or no dialogue is
+ * open, so it is safe to call from anywhere that changes either.
+ */
+async function openStage() {
+  if (!state.convStage || !el.convStage) return;
+  if (el.convDetail.hidden) return;
+
+  el.convStage.hidden = false;
+  lipsync.setEnabled(true);
+
+  if (!stage.isMounted()) {
+    stageNote("Bühne wird geladen …");
+    const ok = await mountStage();
+    if (!ok) return;
+  }
+  stageNote(stage.warning());
+  const c = currentConversation();
+  if (c) stage.setTopicTint(topicById(c.topic).tone);
+}
+
+async function mountStage() {
+  let ok = false;
+  try {
+    ok = await stage.mount(el.convStageCanvas);
+  } catch (e) {
+    ok = false;
+  }
+  if (!ok) {
+    // Turn the switch back off rather than leaving an empty box on the page
+    // claiming to be a stage. Nothing else about the dialogue is affected.
+    state.convStage = false;
+    saveConvStage();
+    renderStageToggle();
+    lipsync.setEnabled(false);
+    el.convStage.hidden = true;
+    stageNote("");
+    el.convVoices.textContent = "Bühne auf diesem Gerät nicht verfügbar";
+  }
+  return ok;
+}
+
+/** Tear the stage down: leaving the dialogue, or leaving Gespräche altogether. */
+function closeStage() {
+  if (el.convStage) el.convStage.hidden = true;
+  stageNote("");
+  lipsync.setEnabled(false);
+  stage.unmount();
+}
+
+function setConvStage(on) {
+  if (on === state.convStage) return;
+  state.convStage = on;
+  saveConvStage();
+  renderStageToggle();
+  if (on) openStage();
+  else closeStage();
+}
+
 function currentConversation() {
   return CONVERSATIONS.find((x) => x.id === play.id) || null;
 }
@@ -695,9 +799,9 @@ function renderPlayControls() {
   el.convPlay.dataset.state = phase;
 
   if (!play.running) {
-    el.convPlay.textContent = manual ? "▶  Gespräch starten" : "▶  Ganzes Gespräch";
+    el.convPlay.textContent = manual ? "▶︎  Gespräch starten" : "▶︎  Ganzes Gespräch";
   } else if (!manual) {
-    el.convPlay.textContent = phase === "playing" ? "❚❚  Pause" : "▶  Weiter";
+    el.convPlay.textContent = phase === "playing" ? "❚❚  Pause" : "▶︎  Weiter";
   }
 
   // One advance control, never two: while it is down by the transcript the top
@@ -800,6 +904,7 @@ function renderConvTopics() {
 
 function renderConvList() {
   stopPlayback();
+  closeStage();                 // the list is not a place a stage belongs
   el.convDetail.hidden = true;
   el.convListWrap.hidden = false;
   renderConvTopics();
@@ -870,6 +975,7 @@ function openConversation(id) {
     '</div>'
   ).join("");
 
+  openStage();
   el.convDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -1085,6 +1191,9 @@ if (el.convMode) {
     if (btn) setConvMode(btn.dataset.cmode);
   });
 }
+if (el.convStageToggle) {
+  el.convStageToggle.addEventListener("click", () => setConvStage(!state.convStage));
+}
 if (el.convStop) el.convStop.addEventListener("click", stopPlayback);
 if (el.convPrev) el.convPrev.addEventListener("click", () => stepLine(-1));
 if (el.convNext) el.convNext.addEventListener("click", () => stepLine(1));
@@ -1140,6 +1249,27 @@ initVoices();
 state.convMode = loadConvMode();
 renderConvMode();
 renderPlayControls();
+
+state.convStage = loadConvStage() && stage.supported();
+renderStageToggle();
+
+/*
+ * The stage takes its colours from the stylesheet, so it has to be told when
+ * they change. Only the system-level switch exists today — the app has no theme
+ * button — but a canvas that stays daylight-white when everything around it
+ * goes dark is conspicuous in a way a missed CSS variable never is.
+ */
+if (window.matchMedia) {
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const onThemeChange = () => {
+    if (!stage.isMounted()) return;
+    stage.applyTheme();
+    const c = currentConversation();
+    if (c) stage.setTopicTint(topicById(c.topic).tone);
+  };
+  if (darkQuery.addEventListener) darkQuery.addEventListener("change", onThemeChange);
+  else if (darkQuery.addListener) darkQuery.addListener(onThemeChange);
+}
 
 /*
  * Diktat and Satzbau own their screens, so they get the handles they need and

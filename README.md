@@ -2,13 +2,14 @@
 
 A German A2 trainer that runs entirely in the browser. No build step, no backend,
 no API keys — every word, dialogue and grammar note ships as a JavaScript module,
-and the only runtime dependency is the browser's own speech synthesis.
+and the only runtime dependencies are the browser's own speech synthesis and, if
+you switch the Bühne on, a pinned copy of three.js committed to the repo.
 
 Six modes — two of them reading, four of them practice:
 
 | Mode | What it does |
 |---|---|
-| **Gespräche** | 108 everyday dialogues between Shruti and Sijan. Play any sentence on its own, or the whole conversation — the transcript stays hidden and arrives line by line as you hear it. Two ways to run one: **Satz für Satz**, which stops after every line until you ask for the next, and **Automatisch**, which plays it through. The ↻ beside any line takes playback back to it and carries on from there, and `←`/`→` step a sentence at a time. English under every line. |
+| **Gespräche** | 108 everyday dialogues between Shruti and Sijan. Play any sentence on its own, or the whole conversation — the transcript stays hidden and arrives line by line as you hear it. Two ways to run one: **Satz für Satz**, which stops after every line until you ask for the next, and **Automatisch**, which plays it through. The ↻ beside any line takes playback back to it and carries on from there, and `←`/`→` step a sentence at a time. English under every line. **Bühne** draws the two speakers in 3D and moves their mouths with the audio — off by default, see [Die Bühne](#die-bühne). |
 | **Diktat** | 1231 dialogue lines, played one at a time with nothing on screen — you type what you hear. The answer is diffed word by word, so a dropped word shows up as one dropped word rather than as everything after it being wrong. Umlauts, ß and noun capitalisation are marked and named; an answer that fails on those alone counts as *fast*, not wrong. |
 | **Vokabeln** | 1009 words in 20 themes. Each opens to a simple sentence, the same sentence in the Perfekt, and again as a `weil` subordinate clause — plus chips linking to the grammar topic behind it. |
 | **Quiz** | A word, four English meanings, one right. Running score kept in the browser. |
@@ -60,6 +61,12 @@ js/
   dialogue.js           Satzbau · Gespräch: role-play through a whole dialogue
   chips.js              pieces, the three levels, and word-order marking
   avatars.js            the two drawn speaker silhouettes
+  stage.js              die Bühne — the 3D scene, and the only file that knows
+                        three.js exists
+  characters.js         the two speakers, built out of spheres in code
+  visemes.js            German spelling → a timed sequence of mouth shapes
+  lipsync.js            what the mouth is doing right now: the estimated track,
+                        gated by the clip's measured loudness
   srs.js                the five Leitner boxes every practice mode shares
   conversations.js      108 dialogues, 1352 turns, 16 topics
   vocab.js              1009 words in 20 themes
@@ -73,6 +80,7 @@ serve.py                local preview only
 make-audio.py           renders dialogue audio with Piper (optional)
 audio/                  rendered clips, if you have run it
 voices/                 downloaded Piper models (gitignored)
+vendor/three/           a pinned three.js, fetched only when the stage is on
 ```
 
 ## Better voices
@@ -171,6 +179,134 @@ one line further on.
 The choice is remembered in `a2trainer.conv.mode`, so *manual* is what a first
 visit gets rather than something re-imposed on someone who has already decided
 otherwise. `←`/`→` and the ↻ beside each line work the same in both.
+
+## Die Bühne
+
+A third button in the Gespräche bar, beside *Satz für Satz* and *Automatisch*
+but not one of them — it is a switch, and it draws the two speakers in 3D with
+their mouths moving in time with the audio.
+
+**It is off by default and remembered once you turn it on**
+(`a2trainer.conv.stage`). Off is the right default for three reasons, and the
+383 KB renderer is the least of them. It rebuilds how audio reaches the speakers
+— see below — which is not a thing to do to someone who did not ask for it. And
+Gespräche already works: the stage is an experiment about whether watching a
+mouth helps at A2, and an experiment that switches itself on is not one you can
+judge.
+
+The canvas is **sticky at the top**, the mirror image of the advance button
+being sticky at the bottom, and for the same reason: by the fourth line the
+transcript has pushed the top of the card off a phone screen, and a stage you
+have to scroll up to find is one you stop watching.
+
+### Why the lip sync works without a speech model
+
+Two signals that are wrong in opposite directions:
+
+**The shapes are estimated from the spelling.** German orthography is close to
+phonemic — `sch` is /ʃ/ every time, `ei` is /aɪ/ every time — so a few dozen
+digraph rules in `visemes.js` get within a viseme of the truth, and a viseme is
+much coarser than a phoneme: /p/, /b/ and /m/ all look like closed lips, so
+every way of being wrong about which one it is looks identical. It knows the
+`ach`-laut from the `ich`-laut (*Buch* and *ich* do different things with the
+lips), that `-tion` is /tsi̯oːn/, that final `-en` is a schwa, and that `chs` is
+/ks/ in *sechs* but not across the seam of *Bauch·schmerzen*.
+
+**The timing is measured off the waveform.** What the spelling cannot give is
+*when*. The relative durations get scaled to the clip's real length, which
+assumes an even pace and is false in the small — a comma slows Piper down more
+than the model predicts, so drift of a syllable or two is normal. So an
+`AnalyserNode` reads the actual loudness each frame and the mouth opening is
+multiplied by it.
+
+Multiply the two and the failure modes cancel. Where the estimate drifts you get
+a neighbouring vowel, which nobody can see is wrong at conversational speed.
+What people *do* see instantly is a mouth flapping through a silence or clamped
+shut through a word, and measured energy alone prevents both. **Estimated shapes
+with measured energy read as correct far more reliably than the timing alone
+deserves** — which is what makes this affordable at 1352 lines instead of
+needing forced alignment per clip.
+
+The browser-voice path gets none of that: `speechSynthesis` exposes no audio at
+all. It runs on the estimate, resynchronised on `boundary` events where the
+browser fires them — a correction, not a clock, since many voices never fire
+one.
+
+One consequence worth knowing: routing the shared `<audio>` element through Web
+Audio is a **one-way door**. `createMediaElementSource` can be called once per
+element for the life of the page, and from that moment the element's sound
+reaches the speakers only through the graph — so a suspended `AudioContext`
+would silence the app rather than merely fail to animate it. Hence the order in
+`lipsync.js`: resume first, verify the context is actually running, and only
+then connect. A context that will not start leaves playback completely
+untouched. On the very first line the context is usually still starting, so that
+line runs on the estimate and every line after it is measured.
+
+### Two kinds of face, one interface
+
+A character is anything with a `group` to put in the scene and an
+`update(dt, state)`. There are two implementations, and the stage does not know
+which it got.
+
+**`characters.js` — built from spheres.** No assets, and what the repo ships.
+Stylised, and told apart the way the SVG silhouettes in `avatars.js` are — by
+hair, not by face, because at 40 pixels on a phone outline is all that survives.
+They take the four shape numbers `open`, `wide`, `round`, `press`, because a
+character drawn in code has no morph targets and needs a face approximated out
+of scalars.
+
+Skin is deliberately **not** derived from the speaker's tint the way the hair and
+shirt are. Sijan's colour is `--accent`, a blue, and a desaturated blue face is a
+dead face at any lightness. Identity is already carried three times over by hair,
+shirt and the name in the transcript.
+
+**`glbcharacter.js` — a rigged glTF avatar.** Named in
+[`js/avatar-manifest.js`](js/avatar-manifest.js), which works the way
+`audio-manifest.js` does: the stage checks it before asking for a file, so a
+speaker without an avatar never fires a 404 and just gets the sphere character
+instead. **Per speaker, not all-or-nothing** — one avatar and one drawn head is a
+working configuration, and a failed load falls back rather than failing the
+stage.
+
+There is **no mapping table** on this path. Ready Player Me, Avaturn and Avatar
+SDK all export morph targets named `viseme_sil` … `viseme_U` — the same 15, under
+the same names `visemes.js` emits — so lip sync is a straight assignment of
+weights onto influences. That is not luck; it is why that alphabet was chosen as
+the phonemiser's output. Blinks and brows come off the ARKit set alongside it,
+and the head turn is split between the `Neck` and `Head` bones so it reads as a
+person looking rather than a bust rotating on a plinth.
+
+Two things the avatar path has to get right on its own:
+
+**Scale is normalised from the head, not the body.** An exported avatar is about
+1.7 units tall because it is modelled in metres; the spheres are built at
+head-radius ≈ 1. Normalising by body height was the first attempt and it crops —
+an RPM avatar is stylised and its head is more than the textbook one-seventh of
+its height, so a fixed body height made the head too big and cut the hair off at
+the top of the strip. Scaling from head-bone-to-crown instead means the camera,
+the framing and the speaker spacing need no knowledge of which kind of character
+they got.
+
+**Measure before you transform.** `getWorldPosition` updates ancestor matrices
+first, so it reports a position that already includes whatever scale the wrapper
+is carrying. Measuring the head *after* setting the scale and multiplying by it
+again squares the factor — 1.56 m became 118 units and both avatars sat far below
+the frame, with the stage simply looking empty.
+
+**Size is the whole constraint.** A 4.7 MB avatar loads fine; a 13.8 MB one with
+27 separate textures did not finish loading at all in testing. Ready Player Me's
+export URL takes `textureAtlas=1024` (merges the outfit's textures into one,
+roughly 5 MB → 2 MB) and `lod=1` (halves the triangles, which nothing can see on
+a head-and-shoulders shot). Ask for both. The stage only ever frames the head, so
+the trousers and shoes are pure download.
+
+Nothing about the stage can break a dialogue. The loop reads `lipsync` and draws;
+it never calls back into playback and holds no state that matters, so it can be
+torn down mid-sentence, or fail to start at all on a device without WebGL — in
+which case the switch turns itself back off and says so, rather than leaving an
+empty box claiming to be a stage. An avatar that loads but carries no visemes is
+reported too, because a still face is otherwise indistinguishable from a broken
+driver.
 
 ## Satzbau levels
 
@@ -274,6 +410,35 @@ same thing to have learnt. Keys carry the mode — `v:` for a vocabulary word,
 Everything lives in one `localStorage` key, `a2trainer.srs.v1`, so it is
 per-browser and never leaves the machine. *Lernfortschritt löschen* in the Quiz
 bar wipes it, and asks first.
+
+## Readability and contrast
+
+The palette and the type scale were audited against WCAG rather than adjusted by
+eye, and the numbers are reproducible — every foreground/background pair in the
+stylesheet is checked at both themes.
+
+**Every pair now clears 4.5:1**, in light and dark. Six were below it before, the
+worst being `--ink-faint` at **2.60:1** on a sunken panel. That token carries the
+English glosses, the hints and the meta lines — for a language learner the
+translation under a sentence is the content, not decoration, so it was the wrong
+thing to have failing. Each colour was walked down its own hue until it cleared
+the threshold against the page, the card *and* the sunken panel, so the palette
+still looks like itself; only lightness moved.
+
+**Base type is 16px, was 14px.** At 14px the micro labels computed to 8.4px and
+the glosses to 11.2px. Nothing is below 11.5px now, reading text sits at
+14.4–15.7px, and `--ink-faint` gave way to `--ink-soft` wherever the text is
+something you actually read rather than a category tag. Line width went to 720px
+to keep the measure sane at the larger size.
+
+**Pointer targets are at least 24 CSS px** (WCAG 2.2 AA) with 8px between
+neighbours: the speaker buttons were 26px stacked 5px apart, and the grammar
+chips computed to about 21px. There is also one `:focus-visible` rule covering
+every focusable element, so a control added later cannot ship without a ring.
+
+The transport glyphs `▶` and `♪` carry U+FE0E, the text presentation selector.
+Without it they render as colour emoji on several Android and iOS builds — a play
+button that is a blue triangle on one phone and a cartoon on the next.
 
 ## Notes on the data
 

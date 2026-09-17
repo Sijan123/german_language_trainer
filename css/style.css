@@ -3,40 +3,40 @@
   --surface: #ffffff;
   --surface-sunken: #ecede6;
   --ink: #1f2a3c;
-  --ink-soft: #58607a;
-  --ink-faint: #8c93a8;
+  --ink-soft: #4d5570;
+  --ink-faint: #626a82;
   --border: #ddd9cc;
   --border-soft: #e7e4d9;
   --accent: #2f5d8a;
   --accent-ink: #ffffff;
   --accent-soft: #e4edf5;
-  --warm: #b06a1f;
+  --warm: #995c1b;
   --warm-soft: #f7e9d8;
-  --good: #3f7d52;
+  --good: #3c774e;
   --good-soft: #e3f0e6;
   --bad: #b0473e;
   --bad-soft: #f7e6e3;
   --shadow: 0 1px 2px rgba(31,42,60,.06), 0 8px 24px rgba(31,42,60,.06);
   --t-alltag: #2f5d8a;
-  --t-essen: #b8862f;
-  --t-freizeit: #3f7d52;
-  --t-reisen: #2f8a86;
+  --t-essen: #906925;
+  --t-freizeit: #3f7c52;
+  --t-reisen: #2a7c79;
   --t-familie: #a8455f;
   --t-wohnen: #7a4fa0;
   --t-wetter: #3a6b7a;
-  --t-koerper: #b8574e;
+  --t-koerper: #b45248;
   --t-arbeit: #4a6fa5;
   --t-schule: #7a5ba6;
   --t-kleidung: #a8497a;
-  --t-stadt: #4f7a6b;
-  --t-zeit: #8a6d3b;
+  --t-stadt: #4e7869;
+  --t-zeit: #886b3a;
   --t-natur: #3f7d3f;
   --t-technik: #3a6b8a;
-  --t-gefuehle: #a85f2b;
+  --t-gefuehle: #a65e2b;
   --t-verben: #5a5f8a;
   --t-adjektive: #7a6a3b;
   --t-kommunikation: #2f7a86;
-  --t-geld: #6b7a3b;
+  --t-geld: #677639;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,7 +46,7 @@
     --surface-sunken: #1e2229;
     --ink: #eceef2;
     --ink-soft: #aeb4c4;
-    --ink-faint: #7a8095;
+    --ink-faint: #888ea0;
     --border: #343b48;
     --border-soft: #2b313d;
     --accent: #7fadde;
@@ -88,7 +88,7 @@
   --surface-sunken: #1e2229;
   --ink: #eceef2;
   --ink-soft: #aeb4c4;
-  --ink-faint: #7a8095;
+  --ink-faint: #888ea0;
   --border: #343b48;
   --border-soft: #2b313d;
   --accent: #7fadde;
@@ -130,14 +130,16 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
+  /* 16px base. At 14px the micro labels landed at 8.4px and the English
+     glosses at 11.2px, which is below anything readable on a phone. */
+  font-size: 16px;
+  line-height: 1.55;
   padding-block: 32px 56px;
   padding-inline: 16px;
   min-height: 100vh;
 }
 
-.wrap { max-width: 660px; margin: 0 auto; }
+.wrap { max-width: 720px; margin: 0 auto; }
 [hidden] { display: none !important; }
 code { font-family: 'IBM Plex Mono', monospace; font-size: .92em; background: rgba(127,127,127,.14); padding: 1px 5px; border-radius: 4px; }
 
@@ -164,7 +166,7 @@ code { font-family: 'IBM Plex Mono', monospace; font-size: .92em; background: rg
 .theme-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .theme-chips button { font-family: inherit; font-size: .78rem; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); border-radius: 999px; padding: 6px 13px; cursor: pointer; }
 .theme-chips button[aria-pressed="true"] { background: var(--tone, var(--accent)); border-color: var(--tone, var(--accent)); color: var(--surface); }
-.vocab-hint { font-size: .8rem; color: var(--ink-faint); margin: 0 0 14px; }
+.vocab-hint { font-size: .88rem; color: var(--ink-soft); margin: 0 0 14px; }
 
 .vocab-list { display: flex; flex-direction: column; gap: 6px; }
 .vocab-item { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; }
@@ -173,10 +175,10 @@ code { font-family: 'IBM Plex Mono', monospace; font-size: .92em; background: rg
 .vocab-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .vocab-de { font-family: 'Fraunces', Georgia, serif; font-size: 1.02rem; font-weight: 600; }
 .vocab-en { color: var(--ink-soft); font-size: .86rem; margin-left: auto; text-align: right; }
-.vocab-type { font-family: 'IBM Plex Mono', monospace; font-size: .6rem; text-transform: uppercase; letter-spacing: .06em; border-radius: 5px; padding: 2px 6px; background: var(--surface-sunken); color: var(--ink-faint); border: 1px solid var(--border-soft); }
+.vocab-type { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .06em; border-radius: 5px; padding: 2px 6px; background: var(--surface-sunken); color: var(--ink-faint); border: 1px solid var(--border-soft); }
 .vocab-detail { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 9px; }
 .vocab-row { display: flex; align-items: flex-start; gap: 10px; }
-.vocab-label { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); flex: 0 0 62px; padding-top: 3px; }
+.vocab-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); flex: 0 0 62px; padding-top: 3px; }
 .vocab-sentence { flex: 1; font-size: .92rem; line-height: 1.5; }
 .vocab-sentence em { font-style: normal; font-weight: 600; color: var(--tone); }
 .speak-btn { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--ink-faint); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
@@ -184,7 +186,7 @@ code { font-family: 'IBM Plex Mono', monospace; font-size: .92em; background: rg
 .speak-btn svg { width: 12px; height: 12px; }
 .vocab-empty { text-align: center; color: var(--ink-faint); font-size: .88rem; padding: 30px 0; }
 
-.gloss { display: block; font-size: .8rem; color: var(--ink-faint); margin-top: 2px; }
+.gloss { display: block; font-size: .92rem; color: var(--ink-soft); margin-top: 2px; }
 /* One switch hides every English string: the gloss under an example sentence,
    the translation in the word header, and the translation under a grammar
    example. Turning it off turns the lists into a self-test. */
@@ -213,9 +215,9 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 .conv-card:hover { border-color: var(--tone, var(--accent)); }
 .conv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .conv-card-top { display: flex; align-items: baseline; gap: 10px; }
-.conv-card-topic { font-family: 'IBM Plex Mono', monospace; font-size: .6rem; text-transform: uppercase;
+.conv-card-topic { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase;
                    letter-spacing: .07em; color: var(--tone, var(--accent)); font-weight: 500; }
-.conv-card-len { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; color: var(--ink-faint); margin-left: auto; }
+.conv-card-len { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); margin-left: auto; }
 .conv-card-title { font-family: 'Fraunces', Georgia, serif; font-size: 1rem; font-weight: 600; line-height: 1.3; }
 .conv-card-en { font-size: .8rem; color: var(--ink-faint); }
 
@@ -240,7 +242,7 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 .conv-stop:hover { background: var(--bad); color: #fff; }
 .conv-title { font-family: 'Fraunces', Georgia, serif; font-size: 1.3rem; font-weight: 600; margin: 0 0 6px; line-height: 1.25; }
 .conv-meta { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
-.conv-topic-chip { font-family: 'IBM Plex Mono', monospace; font-size: .6rem; text-transform: uppercase;
+.conv-topic-chip { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase;
                    letter-spacing: .07em; padding: 3px 8px; border-radius: 999px;
                    background: var(--surface-sunken); color: var(--tone, var(--accent)); }
 
@@ -248,7 +250,7 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 .conv-line { display: flex; align-items: flex-start; gap: 9px; padding: 8px; margin: -8px; border-radius: 10px; }
 .conv-line[data-now] { background: var(--accent-soft); }
 .conv-who { flex: 0 0 48px; display: flex; flex-direction: column; align-items: center; gap: 3px;
-            font-family: 'IBM Plex Mono', monospace; font-size: .58rem;
+            font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
             text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); padding-top: 2px; }
 /* The avatar takes the speaker's own tint through currentColor: one drawing,
    two colours, and nothing to load. */
@@ -268,7 +270,7 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
                background: var(--surface-sunken); border-radius: 12px; padding: 9px 13px; }
 .conv-line[data-who="Sijan"] .conv-bubble { background: var(--accent-soft); }
 .conv-de { font-size: .95rem; line-height: 1.5; }
-.conv-en { font-size: .82rem; color: var(--ink-faint); line-height: 1.45; }
+.conv-en { font-size: .92rem; color: var(--ink-soft); line-height: 1.45; }
 /* Hear this sentence / go back to it. Stacked so a narrow phone keeps the
    bubble the width of the screen rather than the buttons. */
 .conv-actions { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
@@ -287,6 +289,55 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
                     border-radius: 999px; cursor: pointer; white-space: nowrap; }
 .conv-mode button[aria-pressed="true"] { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
 .conv-mode button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Die Bühne.
+ *
+ * A switch, not a third playback mode, so it sits beside the pair rather than
+ * inside them — Satz für Satz and Automatisch are alternatives to each other,
+ * and the stage is orthogonal to both. */
+.conv-stage-toggle {
+  font-family: inherit; font-size: .72rem; font-weight: 600;
+  border: 1px solid var(--border-soft); background: var(--surface-sunken);
+  color: var(--ink-faint); padding: 7px 13px; border-radius: 999px;
+  cursor: pointer; white-space: nowrap; min-height: 32px;
+}
+.conv-stage-toggle[data-on="true"] {
+  background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
+}
+.conv-stage-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Sticky for the same reason the advance button is, at the other end: by the
+   fourth line the transcript has pushed the top of the card off a phone
+   screen, and a stage you have to scroll up to find is one you stop watching.
+   The negative margins take it out to the card's edges so that pinned it reads
+   as a band rather than a picture hovering over the text. */
+.conv-stage {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 -18px 14px;
+  padding: 0;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+/* The canvas fills this; three.js reads its pixel size, so it needs a real
+   height in CSS rather than one that depends on its own content. */
+.conv-stage-canvas { width: 100%; height: 190px; }
+.conv-stage-canvas canvas { display: block; width: 100%; height: 100%; }
+.conv-stage-note {
+  margin: 0; padding: 8px 18px; font-size: .78rem; color: var(--ink-faint);
+  text-align: center;
+}
+/* Shorter on a phone, where it is competing with the transcript for a screen
+   that is mostly transcript. */
+@media (max-width: 520px) {
+  .conv-stage-canvas { height: 140px; }
+}
+/* Landscape on a phone is nearly all stage otherwise. */
+@media (max-height: 520px) {
+  .conv-stage-canvas { height: 120px; }
+}
 
 /* Holding for you. The ring on the current line goes quiet and steady — the
    same signal as a pause, but this one is waiting on you rather than on itself. */
@@ -322,7 +373,7 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 
 /* The voice actually being used — the quickest way to tell a bad system voice
    from a bad recording. */
-.conv-voices { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; color: var(--ink-faint);
+.conv-voices { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint);
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
 .conv-voices[data-recorded="true"] { color: var(--good); }
 
@@ -429,11 +480,11 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 .grammar-ex { display: flex; align-items: flex-start; gap: 9px; }
 .grammar-ex-text { flex: 1; }
 .grammar-de { font-size: .93rem; }
-.grammar-en { display: block; font-size: .8rem; color: var(--ink-faint); margin-top: 1px; }
+.grammar-en { display: block; font-size: .9rem; color: var(--ink-soft); margin-top: 1px; }
 .grammar-watch { font-size: .84rem; line-height: 1.55; background: var(--warm-soft); color: var(--warm); border: 1px solid var(--warm); border-radius: 9px; padding: 10px 12px; }
 .grammar-watch strong { font-weight: 600; }
 .topic-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.topic-chip { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; text-transform: uppercase; letter-spacing: .05em; background: var(--surface-sunken); border: 1px solid var(--border-soft); color: var(--ink-soft); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
+.topic-chip { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .05em; background: var(--surface-sunken); border: 1px solid var(--border-soft); color: var(--ink-soft); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
 .topic-chip:hover { color: var(--accent); border-color: var(--accent-soft); }
 
 /* ---------- Banners ---------- */
@@ -443,7 +494,7 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 
 /* ---------- Setup card ---------- */
 .setup-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 20px; }
-.setup-head { font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-faint); font-weight: 600; margin-bottom: 12px; }
+.setup-head { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-faint); font-weight: 600; margin-bottom: 12px; }
 .setup-row { display: flex; gap: 14px; flex-wrap: wrap; }
 .field { display: flex; flex-direction: column; gap: 5px; min-width: 200px; }
 .field.grow { flex: 1; }
@@ -451,17 +502,17 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 select { font-family: inherit; font-size: .84rem; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--ink); width: 100%; }
 .model-inline { display: flex; gap: 8px; flex-wrap: wrap; }
 .model-inline select { flex: 1; min-width: 150px; }
-.size-hint { font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-faint); margin-top: 6px; }
+.size-hint { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); margin-top: 6px; }
 .size-hint[data-warn="true"] { color: var(--bad); }
 .stt-status { margin-top: 11px; font-size: .78rem; color: var(--ink-soft); }
-.sys-line { margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: var(--ink-faint); line-height: 1.5; }
+.sys-line { margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); line-height: 1.5; }
 .stt-status[data-tone="good"] { color: var(--good); }
 .stt-status[data-tone="bad"] { color: var(--bad); }
 
 .progress-wrap { margin-top: 10px; }
 .progress-track { height: 6px; border-radius: 99px; background: var(--surface-sunken); overflow: hidden; border: 1px solid var(--border-soft); }
 .progress-bar { height: 100%; width: 0; background: var(--accent); transition: width .2s ease; }
-.progress-label { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: var(--ink-faint); margin-top: 5px; }
+.progress-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); margin-top: 5px; }
 
 /* ---------- Picker ---------- */
 .intro { color: var(--ink-soft); font-size: .92rem; margin: 0 0 18px; max-width: 58ch; }
@@ -472,7 +523,7 @@ select { font-family: inherit; font-size: .84rem; padding: 8px 10px; border-radi
 .theme-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--tone); }
 .tc-name { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 1.08rem; }
 .tc-tagline { font-size: .82rem; color: var(--ink-soft); }
-.tc-meta { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: var(--tone); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+.tc-meta { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--tone); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
 
 /* ---------- Practice ---------- */
 .practice-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
@@ -515,10 +566,10 @@ select { font-family: inherit; font-size: .84rem; padding: 8px 10px; border-radi
 .feedback.ok .feedback-head { color: var(--good); }
 .feedback.bad .feedback-head { color: var(--bad); }
 .feedback.neutral .feedback-head { color: var(--ink-soft); }
-.feedback-type { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; background: rgba(127,127,127,.18); border-radius: 6px; padding: 2px 6px; }
-.local-badge { font-family: 'IBM Plex Mono', monospace; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 6px; }
+.feedback-type { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .05em; background: rgba(127,127,127,.18); border-radius: 6px; padding: 2px 6px; }
+.local-badge { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .05em; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 6px; }
 .correction-line { font-family: 'Fraunces', Georgia, serif; font-size: 1.05rem; margin: 6px 0 8px; }
-.tip-line { font-size: .84rem; color: var(--ink-soft); }
+.tip-line { font-size: .9rem; color: var(--ink-soft); }
 .alt-list { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
 .alt-list div { font-size: .88rem; padding: 6px 10px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border-soft); }
 
@@ -528,7 +579,7 @@ select { font-family: inherit; font-size: .84rem; padding: 8px 10px; border-radi
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } .theme-card { transition: none; } }
 
 .error-banner { background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad); border-radius: 10px; padding: 10px 14px; font-size: .84rem; margin-top: 14px; }
-.stats-line { border-top: 1px solid var(--border-soft); padding: 9px 18px; font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: var(--ink-faint); background: var(--surface-sunken); }
+.stats-line { border-top: 1px solid var(--border-soft); padding: 9px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); background: var(--surface-sunken); }
 
 /* ---------- Summary ---------- */
 .summary-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; box-shadow: var(--shadow); padding: 32px 24px; text-align: center; }
@@ -540,7 +591,7 @@ select { font-family: inherit; font-size: .84rem; padding: 8px 10px; border-radi
 footer.hint { margin-top: 26px; text-align: center; font-size: .74rem; color: var(--ink-faint); line-height: 1.6; }
 /* Says which build you are actually looking at — the quickest way to tell a
    stale cached page from a real one. */
-.build { display: block; margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: .68rem; opacity: .75; }
+.build { display: block; margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; opacity: .75; }
 
 /* ---------- Lernfortschritt (Leitner) ---------- */
 /* One strip above Diktat, Quiz and Satzbau. Three segments rather than a
@@ -560,18 +611,18 @@ footer.hint { margin-top: 26px; text-align: center; font-size: .74rem; color: va
 .srs-key.known { color: var(--good); }
 .srs-key.learning { color: var(--warm); }
 .srs-key.due { color: var(--accent); }
-.srs-key.rest { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: .68rem; }
+.srs-key.rest { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; }
 /* Where an answer just put the item, and when it comes back. The box number
    alone means nothing; with the interval beside it the whole scheme explains
    itself after two or three questions. */
 .srs-note { display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace;
-            font-size: .68rem; color: var(--ink-faint); }
+            font-size: 0.72rem; color: var(--ink-faint); }
 
 .bar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .bar-actions .btn { padding: 8px 13px; font-size: .8rem; }
 .score-pill.near { color: var(--warm); border-color: var(--warm-soft); background: var(--warm-soft); }
 /* An explicit hint, not part of the global English switch — you asked for it. */
-.gloss-always { color: var(--ink-faint); font-size: .84rem; }
+.gloss-always { color: var(--ink-soft); font-size: .92rem; }
 
 /* ---------- Diktat ---------- */
 .dict-card { padding: 20px 22px 18px; border-left: 3px solid var(--tone, var(--accent)); }
@@ -579,7 +630,7 @@ footer.hint { margin-top: 26px; text-align: center; font-size: .74rem; color: va
 .dict-play-row { display: flex; align-items: center; gap: 12px; margin: 16px 0 12px; flex-wrap: wrap; }
 .dict-play { min-width: 9.5rem; }
 .dict-play[data-state="playing"] { background: var(--surface-sunken); border-color: var(--border); color: var(--ink-soft); }
-.dict-plays { font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-faint); }
+.dict-plays { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); }
 .dict-en { margin: 0 0 12px; }
 
 #dict-input { width: 100%; resize: vertical; border-radius: 10px; border: 1px solid var(--border);
@@ -591,10 +642,10 @@ footer.hint { margin-top: 26px; text-align: center; font-size: .74rem; color: va
    what was said line up under each other and the difference is the only thing
    your eye has to find. */
 .dict-row { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; }
-.dict-row-label { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; text-transform: uppercase;
+.dict-row-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase;
                   letter-spacing: .06em; color: var(--ink-faint); flex: 0 0 54px; padding-top: 4px; }
-.dict-row-text { flex: 1; font-size: .98rem; line-height: 1.8; }
-.dict-src { margin-top: 12px; font-family: 'IBM Plex Mono', monospace; font-size: .66rem; color: var(--ink-faint); }
+.dict-row-text { flex: 1; font-size: 1rem; line-height: 1.8; }
+.dict-src { margin-top: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); }
 
 /* One word of the diff. Three states worth telling apart: right, right but
    misspelt, and not the word at all. */
@@ -617,7 +668,7 @@ footer.hint { margin-top: 26px; text-align: center; font-size: .74rem; color: va
    "easier" is a figure you can see before you decide to take it rather than a
    promise you have to test. */
 .wo-level-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-.wo-level-label { font-family: 'IBM Plex Mono', monospace; font-size: .62rem; text-transform: uppercase;
+.wo-level-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase;
                   letter-spacing: .06em; color: var(--ink-faint); }
 .wo-levels { margin-bottom: 0; }
 .wo-levels button:disabled { opacity: .45; cursor: default; }
@@ -687,7 +738,7 @@ footer.hint { margin-top: 26px; text-align: center; font-size: .74rem; color: va
 .dlg-role-note { flex: 1 0 100%; font-size: .76rem; color: var(--ink-faint); }
 
 .dlg-run { --tone: var(--accent); }
-.dlg-progress { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: .68rem;
+.dlg-progress { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
                 color: var(--ink-faint); white-space: nowrap; }
 /* Lines you built yourself read back as yours. */
 .dlg-run .conv-line[data-mine="true"] .conv-bubble { box-shadow: inset 0 0 0 1px var(--good); }
@@ -703,3 +754,59 @@ footer.hint { margin-top: 26px; text-align: center; font-size: .74rem; color: va
 
 .dlg-summary { margin-top: 4px; }
 .summary-score .summary-of { font-size: 1.3rem; color: var(--ink-faint); margin-left: 6px; }
+
+/* ==================================================================
+   Accessibility pass
+   ==================================================================
+   Three rules drove the changes below, all of them checked rather than
+   assumed: every pointer target at least 24x24 CSS px (WCAG 2.2 AA), at
+   least 8px between adjacent targets, and a visible focus ring on
+   everything focusable. The palette was solved separately — every
+   foreground/background pair in both themes now clears 4.5:1.
+   ================================================================== */
+
+/* One ring for everything focusable, so a control added later cannot quietly
+   ship without one. The specific rules above still win where an inset ring
+   suits the component better. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* --- pointer targets ---------------------------------------------------- */
+
+/* 26px was under the 24px floor once the border is counted, and two of these
+   stack next to every dialogue line with 5px between them. */
+.speak-btn { width: 32px; height: 32px; }
+.speak-btn svg { width: 14px; height: 14px; }
+.conv-actions { gap: 8px; }
+
+/* Chips are the main way you move around Vokabeln, Quiz and Satzbau — they
+   were about 21px tall, which is a miss on a phone rather than a tap. */
+.theme-chips button { min-height: 36px; padding: 7px 14px; }
+.topic-chip { min-height: 28px; padding: 5px 11px; display: inline-flex; align-items: center; }
+.topic-chips { gap: 8px; }
+.conv-mode button { min-height: 32px; }
+
+/* A text button is still a button. */
+.back-link { min-height: 32px; padding: 6px 8px; display: inline-flex; align-items: center; }
+
+/* The speaker button inside a vocab row sat 26px from the row's own hit area;
+   giving it room stops the two competing for the same thumb. */
+.vocab-row { gap: 12px; }
+
+/* --- motion ------------------------------------------------------------- */
+
+/* Anything that moves has to be able to stop. The dialogue animations already
+   honour this; these are the ones added since. */
+/* Sticky is deliberately NOT unset here: staying put is not motion, and taking
+   it away would send the one button you press all dialogue back off screen. */
+@media (prefers-reduced-motion: reduce) {
+  .wchip, .quiz-opt, .dlg-role { transition: none; }
+}

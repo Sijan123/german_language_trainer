@@ -14,7 +14,14 @@
  * next line starts then — a timer guessed from sentence length drifts badly.
  * Every failure path still fires the callback, so nothing can strand playback
  * half way down a conversation.
+ *
+ * The lip-sync driver is told when a line starts and stops from here, because
+ * here is the only place that knows — every route to making a sound in the app
+ * passes through this file. It is inert unless a stage has switched it on, so
+ * importing it costs nothing to the modes that never draw a face.
  */
+
+import * as lipsync from "./lipsync.js";
 
 /* ------------------------------------------------------------------ */
 /* Voice selection                                                     */
@@ -137,15 +144,17 @@ export function sayLine(line, onEnd) {
   if (line.clip) {
     const audio = player();
     let settled = false;
-    const finish = () => { if (!settled) { settled = true; done(); } };
+    const finish = () => { if (!settled) { settled = true; lipsync.end(); done(); } };
     const fallBack = () => {
       if (settled) return;
       settled = true;
+      lipsync.end();
       speakWithBrowser(line.de, line.s, done);      // clip missing or unplayable
     };
     audio.onended = finish;
     audio.onerror = fallBack;
     audio.src = line.clip;
+    lipsync.begin(line.de, line.s, audio);
     const started = audio.play();
     if (started && typeof started.catch === "function") started.catch(fallBack);
     return;
@@ -161,14 +170,31 @@ function speakWithBrowser(text, speaker, done) {
     const utterance = utteranceFor(text, speaker, LINE_RATE);
 
     let settled = false;
-    const finish = () => { if (!settled) { settled = true; done(); } };
+    const finish = () => { if (!settled) { settled = true; lipsync.end(); done(); } };
     utterance.onend = finish;
     utterance.onerror = finish;
 
+    // There is no waveform to measure on this path, so the mouth runs on the
+    // estimate. `boundary` is the only ground truth the API offers, and only
+    // some browsers and voices fire it — hence a correction, not a clock.
+    utterance.onstart = () => lipsync.begin(text, speaker, null);
+    utterance.onboundary = (event) => {
+      if (event.name && event.name !== "word") return;
+      lipsync.syncWord(wordIndexAt(text, event.charIndex));
+    };
+
     window.speechSynthesis.speak(utterance);
   } catch (e) {
+    lipsync.end();
     done();
   }
+}
+
+/* A boundary event gives a character offset; the track is indexed by word. */
+function wordIndexAt(text, charIndex) {
+  if (!(charIndex > 0)) return 0;
+  const before = text.slice(0, charIndex).trim();
+  return before ? before.split(/\s+/).length : 0;
 }
 
 /** Fire and forget: one word or sentence, no callback. Used by the speak buttons. */
@@ -221,6 +247,7 @@ export function resumeClip() {
 }
 
 export function stopSpeaking() {
+  lipsync.end();
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   if (clipPlayer) {
     clipPlayer.onended = null;
