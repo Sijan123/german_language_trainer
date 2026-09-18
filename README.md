@@ -2,14 +2,13 @@
 
 A German A2 trainer that runs entirely in the browser. No build step, no backend,
 no API keys — every word, dialogue and grammar note ships as a JavaScript module,
-and the only runtime dependencies are the browser's own speech synthesis and, if
-you switch the Bühne on, a pinned copy of three.js committed to the repo.
+and the only runtime dependency is the browser's own speech synthesis.
 
 Six modes — two of them reading, four of them practice:
 
 | Mode | What it does |
 |---|---|
-| **Gespräche** | 108 everyday dialogues between Shruti and Sijan. Play any sentence on its own, or the whole conversation — the transcript stays hidden and arrives line by line as you hear it. Two ways to run one: **Satz für Satz**, which stops after every line until you ask for the next, and **Automatisch**, which plays it through. The ↻ beside any line takes playback back to it and carries on from there, and `←`/`→` step a sentence at a time. English under every line. **Bühne** draws the two speakers in 3D and moves their mouths with the audio — off by default, see [Die Bühne](#die-bühne). |
+| **Gespräche** | 108 everyday dialogues between Shruti and Sijan. Play any sentence on its own, or the whole conversation — the transcript stays hidden and arrives line by line as you hear it. Two ways to run one: **Satz für Satz**, which stops after every line until you ask for the next, and **Automatisch**, which plays it through. The ↻ beside any line takes playback back to it and carries on from there, and `←`/`→` step a sentence at a time. English under every line. |
 | **Diktat** | 1231 dialogue lines, played one at a time with nothing on screen — you type what you hear. The answer is diffed word by word, so a dropped word shows up as one dropped word rather than as everything after it being wrong. Umlauts, ß and noun capitalisation are marked and named; an answer that fails on those alone counts as *fast*, not wrong. |
 | **Vokabeln** | 1009 words in 20 themes. Each opens to a simple sentence, the same sentence in the Perfekt, and again as a `weil` subordinate clause — plus chips linking to the grammar topic behind it. |
 | **Quiz** | A word, four English meanings, one right. Running score kept in the browser. |
@@ -61,12 +60,6 @@ js/
   dialogue.js           Satzbau · Gespräch: role-play through a whole dialogue
   chips.js              pieces, the three levels, and word-order marking
   avatars.js            the two drawn speaker silhouettes
-  stage.js              die Bühne — the 3D scene, and the only file that knows
-                        three.js exists
-  characters.js         the two speakers, built out of spheres in code
-  visemes.js            German spelling → a timed sequence of mouth shapes
-  lipsync.js            what the mouth is doing right now: the estimated track,
-                        gated by the clip's measured loudness
   srs.js                the five Leitner boxes every practice mode shares
   conversations.js      108 dialogues, 1352 turns, 16 topics
   vocab.js              1009 words in 20 themes
@@ -74,13 +67,15 @@ js/
   grammar-topics.js     24 grammar topics with examples
   speech.js             German text-to-speech
   clips.js              where a dialogue line's rendered audio lives
+  video-manifest.js     which dialogues have a rendered film (written by the renderer)
   gloss.js              English for a German example sentence
   util.js               escaping, shuffling, and the German spelling folds
 serve.py                local preview only
 make-audio.py           renders dialogue audio with Piper (optional)
 audio/                  rendered clips, if you have run it
+video/                  rendered films and their posters, if you have run it
 voices/                 downloaded Piper models (gitignored)
-vendor/three/           a pinned three.js, fetched only when the stage is on
+remotion/               the film renderer — a Node project, not part of the site
 ```
 
 ## Better voices
@@ -150,9 +145,9 @@ Everything renders slower than natural by default (`length_scale` 1.2), because
 A2 listening at conversational speed is hopeless. `--speed 1.35` slows it
 further; `--speed 1.0` is the voice's own pace.
 
-## Satz für Satz, or automatically
+## Satz für Satz, automatically, or as a film
 
-A dialogue plays one of two ways, and the switch sits above the transcript.
+A dialogue plays one of three ways, and the switch sits above the transcript.
 
 **Satz für Satz** is the default. Each line appears, is spoken, and then
 everything stops until you press *Nächster Satz*. This is the mode that makes the
@@ -171,6 +166,20 @@ rather than sitting there saying the same thing. The last line offers
 **Automatisch** is the old behaviour, the whole dialogue end to end with a beat
 between turns, pausable with the button or the space bar.
 
+**Video** plays a rendered film of the dialogue — the bubbles arriving, the
+speaker lighting up, the same recorded voices. It replaces the transcript rather
+than sitting above it: the film carries its own subtitles, so leaving the
+transcript underneath would put every sentence on screen twice and hand you the
+answers to a listening exercise. The transport goes with it, because the video
+element has its own and two sets of play buttons on one panel is a question about
+which one is in charge. See [The films](#the-films) for what is rendered and how.
+
+Only a few dialogues have a film so far, so *Video* is a preference that some
+conversations cannot honour. It is resolved per dialogue rather than
+overwritten: open one without a film and you get the transcript with the button
+disabled, open one that has a film and you are back in the mode you picked
+without having to pick it again.
+
 Switching mid-dialogue does the obvious thing in both directions. Going
 automatic releases a line that was waiting and carries on; going manual cancels
 the gap before the next line, so the dialogue stops where it stands rather than
@@ -178,135 +187,111 @@ one line further on.
 
 The choice is remembered in `a2trainer.conv.mode`, so *manual* is what a first
 visit gets rather than something re-imposed on someone who has already decided
-otherwise. `←`/`→` and the ↻ beside each line work the same in both.
+otherwise. `←`/`→` and the ↻ beside each line work the same in both of the two
+transcript modes; in *Video* the keyboard belongs to the player.
 
-## Die Bühne
+## The films
 
-A third button in the Gespräche bar, beside *Satz für Satz* and *Automatisch*
-but not one of them — it is a switch, and it draws the two speakers in 3D with
-their mouths moving in time with the audio.
+A film is a Gespräch acted out. Two drawn rooms side by side, one person
+standing in each, and a card along the bottom carrying the line being spoken —
+German large with each word darkening as the voice reaches it, English in
+italic underneath. When a line names something you can see, an orange ring and
+a label land on it: "die Milch" on the fridge, "der Kuchen" on the mixing bowl.
 
-**It is off by default and remembered once you turn it on**
-(`a2trainer.conv.stage`). Off is the right default for three reasons, and the
-383 KB renderer is the least of them. It rebuilds how audio reaches the speakers
-— see below — which is not a thing to do to someone who did not ask for it. And
-Gespräche already works: the stage is an experiment about whether watching a
-mouth helps at A2, and an experiment that switches itself on is not one you can
-judge.
+It is not a third dataset. The renderer reads `js/conversations.js` and
+`js/audio-manifest.js`, so a film cannot disagree with the dialogue it came
+from, and the audio is the same Piper recording the other two modes play.
 
-The canvas is **sticky at the top**, the mirror image of the advance button
-being sticky at the bottom, and for the same reason: by the fourth line the
-transcript has pushed the top of the card off a phone screen, and a stage you
-have to scroll up to find is one you stop watching.
+### Running it
 
-### Why the lip sync works without a speech model
+The renderer lives in `remotion/` and is a Node project. It is **not** part of
+the site: nothing in `index.html` loads it, and the site works with the whole
+folder deleted. What ships is `video/<id>.mp4` and the poster beside it.
 
-Two signals that are wrong in opposite directions:
+```
+cd remotion
+npm install
+pip install torch torchaudio numpy --index-url https://download.pytorch.org/whl/cpu
 
-**The shapes are estimated from the spelling.** German orthography is close to
-phonemic — `sch` is /ʃ/ every time, `ei` is /aɪ/ every time — so a few dozen
-digraph rules in `visemes.js` get within a viseme of the truth, and a viseme is
-much coarser than a phoneme: /p/, /b/ and /m/ all look like closed lips, so
-every way of being wrong about which one it is looks identical. It knows the
-`ach`-laut from the `ich`-laut (*Buch* and *ich* do different things with the
-lips), that `-tion` is /tsi̯oːn/, that final `-en` is a schwa, and that `chs` is
-/ks/ in *sechs* but not across the seam of *Bauch·schmerzen*.
+node scripts/render.mjs c002             # one dialogue
+node scripts/render.mjs --all            # every dialogue that has a scene
+node scripts/render.mjs c002 --no-align  # skip the slow forced-alignment step
+npm run studio                           # Remotion Studio, to watch one while editing
+```
 
-**The timing is measured off the waveform.** What the spelling cannot give is
-*when*. The relative durations get scaled to the clip's real length, which
-assumes an even pace and is false in the small — a comma slows Piper down more
-than the model predicts, so drift of a syllable or two is normal. So an
-`AnalyserNode` reads the actual loudness each frame and the mouth opening is
-multiplied by it.
+Five steps: probe every clip with `ffprobe` and write the timeline
+(`scripts/build-data.mjs`), find the word boundaries with a forced aligner
+(`scripts/align.py`), render a 1080p master, transcode it to a 720p
+`video/<id>.mp4`, and grab a poster. Then it rewrites `js/video-manifest.js`
+from whatever is actually in `video/`, because a manifest kept in step by hand
+is one that will eventually promise a file that is not there.
 
-Multiply the two and the failure modes cancel. Where the estimate drifts you get
-a neighbouring vowel, which nobody can see is wrong at conversational speed.
-What people *do* see instantly is a mouth flapping through a silence or clamped
-shut through a word, and measured energy alone prevents both. **Estimated shapes
-with measured energy read as correct far more reliably than the timing alone
-deserves** — which is what makes this affordable at 1352 lines instead of
-needing forced alignment per clip.
+You need `ffmpeg` and `ffprobe` on the path. Remotion downloads its own
+Chromium and torchaudio its own alignment model (~1 GB), both on first run.
 
-The browser-voice path gets none of that: `speechSynthesis` exposes no audio at
-all. It runs on the estimate, resynchronised on `boundary` events where the
-browser fires them — a correction, not a clock, since many voices never fire
-one.
+### Three files describe a film
 
-One consequence worth knowing: routing the shared `<audio>` element through Web
-Audio is a **one-way door**. `createMediaElementSource` can be called once per
-element for the life of the page, and from that moment the element's sound
-reaches the speakers only through the graph — so a suspended `AudioContext`
-would silence the app rather than merely fail to animate it. Hence the order in
-`lipsync.js`: resume first, verify the context is actually running, and only
-then connect. A context that will not start leaves playback completely
-untouched. On the very first line the context is usually still starting, so that
-line runs on the estimate and every line after it is measured.
+| file | written by | holds |
+|---|---|---|
+| `src/data/dialogues.json` | `scripts/build-data.mjs` | when each line opens, when its clip starts |
+| `src/data/words.json` | `scripts/align.py` | where every word sits inside its clip |
+| `src/scenes/<id>.ts` | a person | which room each speaker is in, what they look like, what the callouts point at |
 
-### Two kinds of face, one interface
+They stay apart on disk because three different things produce them at three
+different times — merging them would mean re-running the aligner every time a
+clip's length changed. `src/data.ts` joins them at load.
 
-A character is anything with a `group` to put in the scene and an
-`update(dt, state)`. There are two implementations, and the stage does not know
-which it got.
+### Why the karaoke is real
 
-**`characters.js` — built from spheres.** No assets, and what the repo ships.
-Stylised, and told apart the way the SVG silhouettes in `avatars.js` are — by
-hair, not by face, because at 40 pixels on a phone outline is all that survives.
-They take the four shape numbers `open`, `wide`, `round`, `press`, because a
-character drawn in code has no morph targets and needs a face approximated out
-of scalars.
+Each German word darkens on the frame the voice actually reaches it, and that
+needs to know where every word sits inside its WAV. Piper does not say, so
+`scripts/align.py` puts the audio and the text it is known to contain through
+torchaudio's `MMS_FA` aligner and reads the boundaries back.
 
-Skin is deliberately **not** derived from the speaker's tint the way the hair and
-shirt are. Sijan's colour is `--accent`, a blue, and a desaturated blue face is a
-dead face at any lightness. Identity is already carried three times over by hair,
-shirt and the name in the transcript.
+**Forced alignment, not recognition.** The words are given; the only question
+is where in the waveform each one is. It cannot get the words wrong, which
+matters — a highlight that disagrees with the subtitle under it is worse than
+none. On c002 all thirteen lines aligned with nothing falling back to
+interpolation, and "Selbstbedienungskasse" correctly holds 1.27 seconds.
 
-**`glbcharacter.js` — a rigged glTF avatar.** Named in
-[`js/avatar-manifest.js`](js/avatar-manifest.js), which works the way
-`audio-manifest.js` does: the stage checks it before asking for a file, so a
-speaker without an avatar never fires a 404 and just gets the sphere character
-instead. **Per speaker, not all-or-nothing** — one avatar and one drawn head is a
-working configuration, and a failed load falls back rather than failing the
-stage.
+The same timings drive the mouths. The gaps between words are real, so the
+characters' mouths close in them. That is a talking cycle honestly paced, not
+lip-sync: nothing here knows which phoneme is in the air, and a mouth
+pretending to would be inventing data.
 
-There is **no mapping table** on this path. Ready Player Me, Avaturn and Avatar
-SDK all export morph targets named `viseme_sil` … `viseme_U` — the same 15, under
-the same names `visemes.js` emits — so lip sync is a straight assignment of
-weights onto influences. That is not luck; it is why that alphabet was chosen as
-the phonemiser's output. Blinks and brows come off the ARKit set alongside it,
-and the head turn is split between the `Neck` and `Head` bones so it reads as a
-person looking rather than a bust rotating on a plinth.
+### Why c002 is two rooms
 
-Two things the avatar path has to get right on its own:
+Read the script and it is plainly a phone call. Sijan is in the shop ("Die
+Milch ist leider aus"), Shruti is not ("Ich backe am Wochenende einen Kuchen"),
+and it ends with "Ich bin in fünf Minuten zu Hause". Standing them side by side
+in one aisle would have been easier and would have quietly contradicted the
+last line of the dialogue.
 
-**Scale is normalised from the head, not the body.** An exported avatar is about
-1.7 units tall because it is modelled in metres; the spheres are built at
-head-radius ≈ 1. Normalising by body height was the first attempt and it crops —
-an RPM avatar is stylised and its head is more than the textbook one-seventh of
-its height, so a fixed body height made the head too big and cut the hair off at
-the top of the strip. Scaling from head-bone-to-crown instead means the camera,
-the framing and the speaker spacing need no knowledge of which kind of character
-they got.
+Both rooms put their worktop and floor on the same horizon, at y=648. That is
+not decoration: everything below it is covered by the speech bubble, so any
+object a callout points at has to live above it.
 
-**Measure before you transform.** `getWorldPosition` updates ancestor matrices
-first, so it reports a position that already includes whatever scale the wrapper
-is carrying. Measuring the head *after* setting the scale and multiplying by it
-again squares the factor — 1.56 m became 118 units and both avatars sat far below
-the frame, with the stage simply looking empty.
+### Adding a dialogue
 
-**Size is the whole constraint.** A 4.7 MB avatar loads fine; a 13.8 MB one with
-27 separate textures did not finish loading at all in testing. Ready Player Me's
-export URL takes `textureAtlas=1024` (merges the outfit's textures into one,
-roughly 5 MB → 2 MB) and `lod=1` (halves the triangles, which nothing can see on
-a head-and-shoulders shot). Ask for both. The stage only ever frames the head, so
-the trousers and shoes are pure download.
+Write `remotion/src/scenes/<id>.ts` — rooms, cast, anchors, callouts,
+Wortschatz — register it in `src/data.ts`, and run the renderer. A dialogue
+with timings but no scene file has no room to stand in, so it is skipped rather
+than registered as a composition that fails on open.
 
-Nothing about the stage can break a dialogue. The loop reads `lipsync` and draws;
-it never calls back into playback and holds no state that matters, so it can be
-torn down mid-sentence, or fail to start at all on a device without WebGL — in
-which case the switch turns itself back off and says so, rather than leaving an
-empty box claiming to be a stage. An avatar that loads but carries no visemes is
-reported too, because a still face is otherwise indistinguishable from a broken
-driver.
+The two sets that exist are a supermarket and a kitchen. **A dialogue on a
+different topic needs its own set drawn**, which is the real cost of a new
+film — the rest is data.
+
+### Other notes
+
+**The master is thrown away.** Remotion renders at visually lossless quality
+and a 55-second 1080p master is ~30 MB. The repo *is* the website, so what
+ships is a 3.3 MB 720p transcode. `remotion/out/` is gitignored; `video/` is
+not. Rendering all 20 would put roughly 60 MB in the repo.
+
+**The film is always light-themed.** A rendered file cannot follow
+`prefers-color-scheme`, and a light card on a dark page still looks deliberate
+where the reverse looks broken.
 
 ## Satzbau levels
 

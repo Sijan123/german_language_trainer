@@ -7,25 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="css/style.css?v=2026-09-13l">
+<link rel="stylesheet" href="css/style.css?v=2026-09-18c">
 
-<!-- three.js is vendored, not pulled from a CDN: the app has to keep working
-     offline and on a repo with no network at build time, and a pinned copy in
-     git is the only version of "pinned" that survives a CDN going away.
-     Nothing here downloads until the stage is switched on.
-
-     The two specifiers are the ones three.js itself documents, and
-     vendor/three/addons mirrors the upstream examples/jsm layout, so any addon
-     can be dropped in and imported by its published path with no rewriting —
-     which is how GLTFLoader and the two utils it pulls in got here. -->
-<script type="importmap">
-{
-  "imports": {
-    "three": "./vendor/three/three.module.min.js",
-    "three/addons/": "./vendor/three/addons/"
-  }
-}
-</script>
 </head>
 <body>
 <div class="wrap">
@@ -60,7 +43,7 @@
         <span class="vocab-count" id="conv-count"></span>
       </div>
       <div class="theme-chips" id="conv-topics"></div>
-      <p class="vocab-hint">Alltagsgespräche zwischen Shruti und Sijan, Niveau&nbsp;A2. Tippe auf ein Gespräch: jeder Satz einzeln anhörbar, mit englischer Übersetzung. <strong>Satz für Satz</strong> hält nach jedem Satz an, bis du weitergehst — so bleibt Zeit, den Satz wirklich anzusehen; <strong>Automatisch</strong> spielt das ganze Gespräch durch. Die <kbd>Leertaste</kbd> geht weiter beziehungsweise pausiert, <kbd>←</kbd> und <kbd>→</kbd> gehen einen Satz zurück oder vor, und das ↻ neben einem Satz wiederholt ab dort.</p>
+      <p class="vocab-hint">Alltagsgespräche zwischen Shruti und Sijan, Niveau&nbsp;A2. Tippe auf ein Gespräch: jeder Satz einzeln anhörbar, mit englischer Übersetzung. <strong>Satz für Satz</strong> hält nach jedem Satz an, bis du weitergehst — so bleibt Zeit, den Satz wirklich anzusehen; <strong>Automatisch</strong> spielt das ganze Gespräch durch; <strong>Video</strong> spielt das Gespräch als Film — die beiden am Telefon, jedes Wort hebt sich hervor, wenn es gesprochen wird. Die <kbd>Leertaste</kbd> geht weiter beziehungsweise pausiert, <kbd>←</kbd> und <kbd>→</kbd> gehen einen Satz zurück oder vor, und das ↻ neben einem Satz wiederholt ab dort.</p>
       <div class="conv-list" id="conv-list"></div>
     </div>
 
@@ -71,10 +54,9 @@
         <div class="conv-mode" id="conv-mode" role="group" aria-label="Wiedergabe">
           <button type="button" data-cmode="manual" aria-pressed="true">Satz für Satz</button>
           <button type="button" data-cmode="auto" aria-pressed="false">Automatisch</button>
+          <button type="button" data-cmode="video" aria-pressed="false" id="conv-mode-video" hidden>Video</button>
         </div>
-        <button type="button" class="conv-stage-toggle" id="conv-stage-toggle"
-                data-on="false" aria-pressed="false" title="Bühne ein- oder ausblenden">Bühne</button>
-        <div class="conv-controls">
+        <div class="conv-controls" id="conv-controls">
           <button class="btn conv-step" id="conv-prev" title="Satz zurück" aria-label="Einen Satz zurück" hidden>↺</button>
           <button class="btn btn-primary conv-play" id="conv-play" data-on="false" data-state="idle">▶︎&nbsp; Gespräch starten</button>
           <button class="btn conv-step" id="conv-next" title="Satz vor" aria-label="Einen Satz vor" hidden>↻</button>
@@ -84,14 +66,14 @@
       <h2 class="conv-title" id="conv-title"></h2>
       <div class="conv-meta" id="conv-meta"></div>
 
-      <!-- Sticky for the same reason the advance button at the bottom is: by the
-           fourth line a dialogue has pushed everything above it off a phone
-           screen, and a stage you have to scroll back up to is a stage nobody
-           watches. The canvas is created by stage.js and removed with it, so
-           this stays empty whenever the toggle is off. -->
-      <div class="conv-stage" id="conv-stage" hidden>
-        <div class="conv-stage-canvas" id="conv-stage-canvas"></div>
-        <p class="conv-stage-note" id="conv-stage-note" hidden></p>
+      <!-- Watching instead of reading. The film is the same script and the same
+           recorded voices as the other two modes, so it replaces the transcript
+           rather than sitting beside it: two copies of the conversation on one
+           screen is one place too many to look. -->
+      <div class="conv-film" id="conv-film" hidden>
+        <video id="conv-video" controls preload="metadata" playsinline
+               aria-label="Das Gespräch als Film"></video>
+        <p class="conv-film-note" id="conv-film-note"></p>
       </div>
 
       <div class="conv-lines" id="conv-lines"></div>
@@ -288,7 +270,7 @@
   </section>
 
   <footer class="hint">Alles läuft lokal — die Gespräche, die Vokabeln, die Sprachausgabe und dein Lernfortschritt. Nichts verlässt deinen Rechner.
-    <span class="build">Build 2026-09-13l · Kontrast &amp; Lesbarkeit</span>
+    <span class="build">Build 2026-09-18c · Gespräch als Film</span>
   </footer>
 </div>
 

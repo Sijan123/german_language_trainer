@@ -3,12 +3,11 @@ import { GRAMMAR, grammarById } from "./grammar-topics.js";
 import { CONV_TOPICS, CONVERSATIONS } from "./conversations.js";
 import { AUDIO } from "./audio-manifest.js";
 import { clipFor } from "./clips.js";
+import { videoFor } from "./video-manifest.js";
 import { avatarFor } from "./avatars.js";
 import { escapeHtml, pickOne, shuffle, SPEAKER_SVG } from "./util.js";
 import { glossFor } from "./gloss.js";
 import * as srs from "./srs.js";
-import * as stage from "./stage.js";
-import * as lipsync from "./lipsync.js";
 import { initDictation, enterDictation, leaveDictation } from "./dictation.js";
 import { initWordOrder, enterWordOrder } from "./wordorder.js";
 import { initDialogue, enterDialogue, leaveDialogue } from "./dialogue.js";
@@ -29,8 +28,8 @@ const state = {
   vocabQuery: "",
   convTopic: "alle",
   convQuery: "",
-  convMode: "manual",       // "manual" stops after every line, "auto" runs on
-  convStage: false,         // draw the speakers, and move their mouths with the audio
+  // "manual" stops after every line, "auto" runs on, "video" plays the film
+  convMode: "manual",
   woSub: "sentences",       // Satzbau: "sentences" drill or "dialogue" role-play
   showEn: true              // show the English under every German line
 };
@@ -64,13 +63,14 @@ const el = {
   convPrev: $("conv-prev"),
   convNext: $("conv-next"),
   convMode: $("conv-mode"),
-  convStageToggle: $("conv-stage-toggle"),
-  convStage: $("conv-stage"),
-  convStageCanvas: $("conv-stage-canvas"),
-  convStageNote: $("conv-stage-note"),
   convAdvance: $("conv-advance"),
   convAdvanceBtn: $("conv-advance-btn"),
   convVoices: $("conv-voices"),
+  convControls: $("conv-controls"),
+  convFilm: $("conv-film"),
+  convVideo: $("conv-video"),
+  convFilmNote: $("conv-film-note"),
+  convModeVideo: $("conv-mode-video"),
 
   screenVocab: $("screen-vocab"),
   vocabSearch: $("vocab-search"),
@@ -114,7 +114,6 @@ function setMode(mode) {
   });
 
   stopPlayback();
-  if (leaving === "conversation" && mode !== "conversation") closeStage();
   if (leaving === "dictation" && mode !== "dictation") leaveDictation();
   if (leaving === "wordorder" && mode !== "wordorder") leaveDialogue();
 
@@ -653,7 +652,8 @@ const CONV_MODE_KEY = "a2trainer.conv.mode";
 
 function loadConvMode() {
   try {
-    return localStorage.getItem(CONV_MODE_KEY) === "auto" ? "auto" : "manual";
+    const saved = localStorage.getItem(CONV_MODE_KEY);
+    return saved === "auto" || saved === "video" ? saved : "manual";
   } catch (e) {
     return "manual";
   }
@@ -661,102 +661,6 @@ function loadConvMode() {
 
 function saveConvMode() {
   try { localStorage.setItem(CONV_MODE_KEY, state.convMode); } catch (e) { /* optional */ }
-}
-
-/* ------------------------------------------------------------------ */
-/* Die Bühne                                                           */
-/* ------------------------------------------------------------------ */
-
-/*
- * Off by default, and remembered once turned on.
- *
- * Off is the right default for three reasons and only one of them is the 383 KB
- * renderer. The second is that the stage rebuilds how audio reaches the
- * speakers — see lipsync.js — which is not a thing to do to someone who did not
- * ask. The third is that Gespräche already works; the stage is an experiment
- * about whether watching a mouth helps at A2, and an experiment that switches
- * itself on is not one you can judge.
- */
-const CONV_STAGE_KEY = "a2trainer.conv.stage";
-
-function loadConvStage() {
-  try { return localStorage.getItem(CONV_STAGE_KEY) === "on"; } catch (e) { return false; }
-}
-
-function saveConvStage() {
-  try { localStorage.setItem(CONV_STAGE_KEY, state.convStage ? "on" : "off"); } catch (e) { /* optional */ }
-}
-
-function renderStageToggle() {
-  if (!el.convStageToggle) return;
-  el.convStageToggle.dataset.on = String(state.convStage);
-  el.convStageToggle.setAttribute("aria-pressed", String(state.convStage));
-}
-
-function stageNote(text) {
-  if (!el.convStageNote) return;
-  el.convStageNote.textContent = text || "";
-  el.convStageNote.hidden = !text;
-}
-
-/**
- * Show the stage for the dialogue that is open, building it if this is the
- * first time. Silently does nothing when the toggle is off or no dialogue is
- * open, so it is safe to call from anywhere that changes either.
- */
-async function openStage() {
-  if (!state.convStage || !el.convStage) return;
-  if (el.convDetail.hidden) return;
-
-  el.convStage.hidden = false;
-  lipsync.setEnabled(true);
-
-  if (!stage.isMounted()) {
-    stageNote("Bühne wird geladen …");
-    const ok = await mountStage();
-    if (!ok) return;
-  }
-  stageNote(stage.warning());
-  const c = currentConversation();
-  if (c) stage.setTopicTint(topicById(c.topic).tone);
-}
-
-async function mountStage() {
-  let ok = false;
-  try {
-    ok = await stage.mount(el.convStageCanvas);
-  } catch (e) {
-    ok = false;
-  }
-  if (!ok) {
-    // Turn the switch back off rather than leaving an empty box on the page
-    // claiming to be a stage. Nothing else about the dialogue is affected.
-    state.convStage = false;
-    saveConvStage();
-    renderStageToggle();
-    lipsync.setEnabled(false);
-    el.convStage.hidden = true;
-    stageNote("");
-    el.convVoices.textContent = "Bühne auf diesem Gerät nicht verfügbar";
-  }
-  return ok;
-}
-
-/** Tear the stage down: leaving the dialogue, or leaving Gespräche altogether. */
-function closeStage() {
-  if (el.convStage) el.convStage.hidden = true;
-  stageNote("");
-  lipsync.setEnabled(false);
-  stage.unmount();
-}
-
-function setConvStage(on) {
-  if (on === state.convStage) return;
-  state.convStage = on;
-  saveConvStage();
-  renderStageToggle();
-  if (on) openStage();
-  else closeStage();
 }
 
 function currentConversation() {
@@ -769,11 +673,113 @@ function atLastLine() {
   return !!c && play.index >= c.lines.length - 1;
 }
 
+/** The film for the dialogue currently open, or null if it has none. */
+function openFilm() {
+  return play.id ? videoFor(play.id) : null;
+}
+
+/*
+ * What the page is actually doing, as opposed to what you last asked for.
+ *
+ * Only a handful of dialogues have been rendered, so "Video" is a preference
+ * that some conversations cannot honour. Keeping the preference and resolving it
+ * per dialogue means opening one without a film shows you the transcript and
+ * leaves your choice alone — open one that has a film and you are back in the
+ * mode you picked, without having to pick it again.
+ */
+function effectiveConvMode() {
+  if (state.convMode === "video" && !openFilm()) return "manual";
+  return state.convMode;
+}
+
 function renderConvMode() {
   if (!el.convMode) return;
+  const effective = effectiveConvMode();
   Array.prototype.forEach.call(el.convMode.querySelectorAll("button"), (b) => {
-    b.setAttribute("aria-pressed", String(b.dataset.cmode === state.convMode));
+    b.setAttribute("aria-pressed", String(b.dataset.cmode === effective));
   });
+
+  /* The Video button only exists where there is something to play. It is
+     disabled rather than hidden once any film exists, so the row does not
+     change width as you move between dialogues. */
+  if (el.convModeVideo) {
+    const film = openFilm();
+    el.convModeVideo.hidden = false;
+    el.convModeVideo.disabled = !film;
+    el.convModeVideo.title = film
+      ? "Das Gespräch als Film ansehen"
+      : "Für dieses Gespräch ist noch kein Film gerendert";
+  }
+}
+
+/**
+ * Put the film's sound where the rest of the app's sound is.
+ *
+ * Two reasons this is not left to the <video> element alone. The header switch
+ * says "Ton an" and governs every other sound the app makes, so a film that
+ * ignored it would be the one thing in the trainer that keeps talking after you
+ * asked for quiet. And Chrome remembers mute and volume per origin: mute the
+ * player once with its own controls and every <video> loaded from that origin
+ * afterwards starts muted, across reloads, with nothing on screen to say so.
+ * That is a silent film and no obvious reason for it, which is exactly the
+ * thing this function exists to make impossible.
+ */
+function syncFilmSound(reset) {
+  if (!el.convVideo) return;
+  el.convVideo.muted = !state.ttsOn;
+  // Only on entering the mode: mid-playback this would fight the volume
+  // slider, but arriving on a video that is silently at zero is the bug.
+  if (reset) el.convVideo.volume = 1;
+}
+
+/**
+ * Watching or reading — one or the other, never both.
+ *
+ * The film carries the whole conversation, subtitles included, so leaving the
+ * transcript underneath it would put the same sentences on screen twice and
+ * hand you the answers to a listening exercise. The transport goes too: the
+ * video element has its own, and two sets of play buttons on one panel is a
+ * question about which one is in charge.
+ */
+function renderConvDisplay() {
+  const film = openFilm();
+  const watching = effectiveConvMode() === "video" && !!film;
+
+  if (el.convFilm) el.convFilm.hidden = !watching;
+  if (el.convLines) el.convLines.hidden = watching;
+  if (el.convControls) el.convControls.hidden = watching;
+
+  if (el.convVideo) {
+    if (watching) {
+      const src = film.src;
+      /* Only touch src when it actually changes: reassigning it reloads the
+         video and throws away where you had got to. */
+      if (el.convVideo.getAttribute("src") !== src) {
+        el.convVideo.setAttribute("src", src);
+        el.convVideo.setAttribute("poster", film.poster);
+        el.convVideo.load();
+      }
+      syncFilmSound(true);
+    } else if (!el.convVideo.paused) {
+      el.convVideo.pause();
+    }
+  }
+
+  renderFilmNote();
+}
+
+/** The line under the player. Redrawn by the sound switch, so "Ton ist aus"
+    appears next to the thing that has gone quiet rather than only in the
+    header. */
+function renderFilmNote() {
+  const film = openFilm();
+  if (!el.convFilmNote || !film) return;
+  const mins = Math.floor(film.seconds / 60);
+  const secs = Math.round(film.seconds % 60);
+  el.convFilmNote.textContent =
+    film.lines + " Sätze · " + mins + ":" + String(secs).padStart(2, "0") +
+    " · gespielt, mit den Aufnahmen — jedes Wort wird dunkel, sobald es gesprochen ist" +
+    (state.ttsOn ? "" : " · Ton ist aus");
 }
 
 /**
@@ -791,6 +797,16 @@ function renderConvMode() {
  */
 function renderPlayControls() {
   if (!el.convPlay) return;
+  /* In video mode the whole transport belongs to the video element; nothing
+     below this point has anything to drive. */
+  if (effectiveConvMode() === "video") {
+    el.convPlay.hidden = true;
+    if (el.convAdvance) el.convAdvance.hidden = true;
+    if (el.convStop) el.convStop.hidden = true;
+    if (el.convPrev) el.convPrev.hidden = true;
+    if (el.convNext) el.convNext.hidden = true;
+    return;
+  }
   const manual = state.convMode === "manual";
   const phase = !play.running ? "idle" : (play.paused ? "paused" : "playing");
   const stepping = manual && play.running;
@@ -828,11 +844,23 @@ function renderPlayControls() {
  * before the next line so the dialogue stops where it stands.
  */
 function setConvMode(mode) {
-  if (mode !== "manual" && mode !== "auto") return;
+  if (mode !== "manual" && mode !== "auto" && mode !== "video") return;
+  if (mode === "video" && !openFilm()) return;
   if (mode === state.convMode) return;
+  const leaving = effectiveConvMode();
   state.convMode = mode;
   saveConvMode();
   renderConvMode();
+
+  /* Going to the film stops whatever the voices were doing: two readings of the
+     same dialogue at once is the one thing this panel must never do. Coming back
+     from it leaves the transcript where it was, unplayed. */
+  if (mode === "video") stopPlayback();
+  renderConvDisplay();
+  if (leaving === "video" && mode !== "video") {
+    renderPlayControls();
+    return;
+  }
 
   if (play.running && !play.paused) {
     if (mode === "manual" && play.phase === "gap") {
@@ -847,6 +875,11 @@ function setConvMode(mode) {
 }
 
 function stopPlayback() {
+  /* Whatever stops the voices stops the film: this is what the mode tabs and
+     the back link both go through, and a video still talking from a panel you
+     have navigated away from is a bug you hear before you find. */
+  if (el.convVideo && !el.convVideo.paused) el.convVideo.pause();
+
   play.running = false;
   play.paused = false;
   play.phase = null;
@@ -904,7 +937,6 @@ function renderConvTopics() {
 
 function renderConvList() {
   stopPlayback();
-  closeStage();                 // the list is not a place a stage belongs
   el.convDetail.hidden = true;
   el.convListWrap.hidden = false;
   renderConvTopics();
@@ -975,7 +1007,12 @@ function openConversation(id) {
     '</div>'
   ).join("");
 
-  openStage();
+  /* The Video button and the transcript both depend on which dialogue this is,
+     so they are settled after the panel is filled and before it is scrolled to. */
+  renderConvMode();
+  renderConvDisplay();
+  renderPlayControls();
+
   el.convDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -1191,9 +1228,6 @@ if (el.convMode) {
     if (btn) setConvMode(btn.dataset.cmode);
   });
 }
-if (el.convStageToggle) {
-  el.convStageToggle.addEventListener("click", () => setConvStage(!state.convStage));
-}
 if (el.convStop) el.convStop.addEventListener("click", stopPlayback);
 if (el.convPrev) el.convPrev.addEventListener("click", () => stepLine(-1));
 if (el.convNext) el.convNext.addEventListener("click", () => stepLine(1));
@@ -1237,7 +1271,10 @@ el.soundToggle.addEventListener("click", () => {
   el.soundToggle.dataset.on = String(state.ttsOn);
   el.soundToggle.setAttribute("aria-pressed", String(state.ttsOn));
   el.soundToggleLabel.textContent = state.ttsOn ? "Ton an" : "Ton aus";
-  if (!state.ttsOn) stopPlayback();
+  // Turning the sound off stops the voices, but a film is also a picture:
+  // it keeps running with the subtitles and goes quiet, rather than halting.
+  if (effectiveConvMode() === "video") { syncFilmSound(false); renderFilmNote(); }
+  else if (!state.ttsOn) stopPlayback();
 });
 
 /* ------------------------------------------------------------------ */
@@ -1249,27 +1286,6 @@ initVoices();
 state.convMode = loadConvMode();
 renderConvMode();
 renderPlayControls();
-
-state.convStage = loadConvStage() && stage.supported();
-renderStageToggle();
-
-/*
- * The stage takes its colours from the stylesheet, so it has to be told when
- * they change. Only the system-level switch exists today — the app has no theme
- * button — but a canvas that stays daylight-white when everything around it
- * goes dark is conspicuous in a way a missed CSS variable never is.
- */
-if (window.matchMedia) {
-  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  const onThemeChange = () => {
-    if (!stage.isMounted()) return;
-    stage.applyTheme();
-    const c = currentConversation();
-    if (c) stage.setTopicTint(topicById(c.topic).tone);
-  };
-  if (darkQuery.addEventListener) darkQuery.addEventListener("change", onThemeChange);
-  else if (darkQuery.addListener) darkQuery.addListener(onThemeChange);
-}
 
 /*
  * Diktat and Satzbau own their screens, so they get the handles they need and

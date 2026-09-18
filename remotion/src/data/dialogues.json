@@ -1,0 +1,158 @@
+{
+  "c002": {
+    "id": "c002",
+    "title": "Im Supermarkt fehlt die Hälfte",
+    "titleEn": "Half the list is missing at the supermarket",
+    "topic": "Einkaufen",
+    "tone": "#677639",
+    "fps": 30,
+    "intro": 62,
+    "outro": 150,
+    "durationInFrames": 1632,
+    "lines": [
+      {
+        "i": 0,
+        "s": "Sijan",
+        "de": "Was steht alles auf der Liste?",
+        "en": "What's on the list?",
+        "clip": "audio/c002/01.wav",
+        "enterAt": 62,
+        "audioAt": 71,
+        "audioFrames": 52,
+        "endAt": 147
+      },
+      {
+        "i": 1,
+        "s": "Shruti",
+        "de": "Milch, Brot, Eier, Tomaten und Käse.",
+        "en": "Milk, bread, eggs, tomatoes and cheese.",
+        "clip": "audio/c002/02.wav",
+        "enterAt": 147,
+        "audioAt": 156,
+        "audioFrames": 88,
+        "endAt": 268
+      },
+      {
+        "i": 2,
+        "s": "Sijan",
+        "de": "Die Milch ist leider aus.",
+        "en": "Unfortunately the milk is sold out.",
+        "clip": "audio/c002/03.wav",
+        "enterAt": 268,
+        "audioAt": 277,
+        "audioFrames": 46,
+        "endAt": 347
+      },
+      {
+        "i": 3,
+        "s": "Shruti",
+        "de": "Nimm einfach die Hafermilch, die ist auch gut.",
+        "en": "Just take the oat milk, that's fine too.",
+        "clip": "audio/c002/04.wav",
+        "enterAt": 347,
+        "audioAt": 356,
+        "audioFrames": 89,
+        "endAt": 469
+      },
+      {
+        "i": 4,
+        "s": "Sijan",
+        "de": "Wie viele Eier brauchen wir?",
+        "en": "How many eggs do we need?",
+        "clip": "audio/c002/05.wav",
+        "enterAt": 469,
+        "audioAt": 478,
+        "audioFrames": 61,
+        "endAt": 563
+      },
+      {
+        "i": 5,
+        "s": "Shruti",
+        "de": "Zehn reichen. Ich backe am Wochenende einen Kuchen.",
+        "en": "Ten is enough. I'm baking a cake at the weekend.",
+        "clip": "audio/c002/06.wav",
+        "enterAt": 563,
+        "audioAt": 572,
+        "audioFrames": 98,
+        "endAt": 694
+      },
+      {
+        "i": 6,
+        "s": "Sijan",
+        "de": "Die Tomaten sehen heute nicht gut aus.",
+        "en": "The tomatoes don't look good today.",
+        "clip": "audio/c002/07.wav",
+        "enterAt": 694,
+        "audioAt": 703,
+        "audioFrames": 70,
+        "endAt": 797
+      },
+      {
+        "i": 7,
+        "s": "Shruti",
+        "de": "Dann kaufen wir sie morgen auf dem Markt.",
+        "en": "Then we'll buy them at the market tomorrow.",
+        "clip": "audio/c002/08.wav",
+        "enterAt": 797,
+        "audioAt": 806,
+        "audioFrames": 78,
+        "endAt": 908
+      },
+      {
+        "i": 8,
+        "s": "Sijan",
+        "de": "Soll ich noch etwas zum Frühstück mitnehmen?",
+        "en": "Should I get something for breakfast too?",
+        "clip": "audio/c002/09.wav",
+        "enterAt": 908,
+        "audioAt": 917,
+        "audioFrames": 69,
+        "endAt": 1010
+      },
+      {
+        "i": 9,
+        "s": "Shruti",
+        "de": "Ja, ein Glas Marmelade bitte.",
+        "en": "Yes, a jar of jam please.",
+        "clip": "audio/c002/10.wav",
+        "enterAt": 1010,
+        "audioAt": 1019,
+        "audioFrames": 79,
+        "endAt": 1122
+      },
+      {
+        "i": 10,
+        "s": "Sijan",
+        "de": "An der Kasse ist eine lange Schlange.",
+        "en": "There's a long queue at the till.",
+        "clip": "audio/c002/11.wav",
+        "enterAt": 1122,
+        "audioAt": 1131,
+        "audioFrames": 64,
+        "endAt": 1219
+      },
+      {
+        "i": 11,
+        "s": "Shruti",
+        "de": "Geh zur Selbstbedienungskasse, die ist frei.",
+        "en": "Go to the self-checkout, it's free.",
+        "clip": "audio/c002/12.wav",
+        "enterAt": 1219,
+        "audioAt": 1228,
+        "audioFrames": 96,
+        "endAt": 1348
+      },
+      {
+        "i": 12,
+        "s": "Sijan",
+        "de": "Gute Idee. Ich bin in fünf Minuten zu Hause.",
+        "en": "Good idea. I'll be home in five minutes.",
+        "clip": "audio/c002/13.wav",
+        "enterAt": 1348,
+        "audioAt": 1357,
+        "audioFrames": 101,
+        "endAt": 1482
+      }
+    ]
+  }
+}

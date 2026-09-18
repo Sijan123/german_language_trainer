@@ -290,54 +290,18 @@ body[data-mode="wordorder"][data-wo-sub="dialogue"] .en-bar { display: flex; }
 .conv-mode button[aria-pressed="true"] { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
 .conv-mode button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-/* Die Bühne.
- *
- * A switch, not a third playback mode, so it sits beside the pair rather than
- * inside them — Satz für Satz and Automatisch are alternatives to each other,
- * and the stage is orthogonal to both. */
-.conv-stage-toggle {
-  font-family: inherit; font-size: .72rem; font-weight: 600;
-  border: 1px solid var(--border-soft); background: var(--surface-sunken);
-  color: var(--ink-faint); padding: 7px 13px; border-radius: 999px;
-  cursor: pointer; white-space: nowrap; min-height: 32px;
-}
-.conv-stage-toggle[data-on="true"] {
-  background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
-}
-.conv-stage-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-/* Sticky for the same reason the advance button is, at the other end: by the
-   fourth line the transcript has pushed the top of the card off a phone
-   screen, and a stage you have to scroll up to find is one you stop watching.
-   The negative margins take it out to the card's edges so that pinned it reads
-   as a band rather than a picture hovering over the text. */
-.conv-stage {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  margin: 0 -18px 14px;
-  padding: 0;
-  background: var(--surface-sunken);
-  border-bottom: 1px solid var(--border-soft);
-  overflow: hidden;
-}
-/* The canvas fills this; three.js reads its pixel size, so it needs a real
-   height in CSS rather than one that depends on its own content. */
-.conv-stage-canvas { width: 100%; height: 190px; }
-.conv-stage-canvas canvas { display: block; width: 100%; height: 100%; }
-.conv-stage-note {
-  margin: 0; padding: 8px 18px; font-size: .78rem; color: var(--ink-faint);
-  text-align: center;
-}
-/* Shorter on a phone, where it is competing with the transcript for a screen
-   that is mostly transcript. */
-@media (max-width: 520px) {
-  .conv-stage-canvas { height: 140px; }
-}
-/* Landscape on a phone is nearly all stage otherwise. */
-@media (max-height: 520px) {
-  .conv-stage-canvas { height: 120px; }
-}
+/* The film. It is 16:9 and the panel is 720 pixels wide, so it never needs to
+   be told how tall to be — the aspect ratio does that, and stating a height as
+   well is how a player ends up letterboxed inside its own box. */
+.conv-film { margin-bottom: 4px; }
+.conv-film video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px;
+                   background: var(--surface-sunken); border: 1px solid var(--border-soft); }
+.conv-film-note { margin: 10px 2px 0; font-size: .8rem; color: var(--ink-faint);
+                  font-family: 'IBM Plex Mono', monospace; letter-spacing: .03em; }
+/* A dialogue with no film says so on the disabled button rather than by the
+   button quietly doing nothing. */
+.conv-mode button[disabled] { opacity: .45; cursor: not-allowed; }
 
 /* Holding for you. The ring on the current line goes quiet and steady — the
    same signal as a pause, but this one is waiting on you rather than on itself. */

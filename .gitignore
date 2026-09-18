@@ -24,3 +24,9 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# The Remotion project builds the Gespräch films. What ships is video/*.mp4 and
+# the poster beside it, both committed; everything below is an intermediate.
+remotion/out/
+# copies of audio/, made by build-data.mjs so staticFile() can reach them
+remotion/public/
