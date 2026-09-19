@@ -23,8 +23,7 @@ import {
 } from "remotion";
 import { theme } from "./theme";
 import { Grade, Grain, Vignette } from "./components/Layers";
-import { Supermarkt } from "./components/sets/Supermarkt";
-import { Kueche } from "./components/sets/Kueche";
+import { SETS, findAnchor } from "./components/sets";
 import { Character } from "./components/Character";
 import { SpeechBubble, BUBBLE_WIDTH } from "./components/SpeechBubble";
 import { Callout } from "./components/Callout";
@@ -33,8 +32,6 @@ import type { Dialogue, Scene } from "./types";
 
 const W = 1920;
 const H = 1080;
-
-const SETS = { supermarkt: Supermarkt, kueche: Kueche } as const;
 
 /* ------------------------------------------------------------------ */
 /* Rooms                                                               */
@@ -50,7 +47,8 @@ const SETS = { supermarkt: Supermarkt, kueche: Kueche } as const;
 const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
   <AbsoluteFill>
     {scene.rooms.map((room, i) => {
-      const Set = SETS[room.set];
+      const def = SETS[room.set];
+      const Set = def.Component;
       const width = room.to - room.from;
       return (
         <div
@@ -68,7 +66,10 @@ const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
               static shot is never quite static. */}
           <div
             style={{
-              width,
+              /* The set's own width, not the room's: a half-frame drawing
+                 dropped into a full-frame room would leave the other half
+                 blank rather than stretching to fill it. */
+              width: def.width,
               height: H,
               transformOrigin: i === 0 ? "70% 55%" : "30% 55%",
               transform: `scale(${1.02 + drift * (i === 0 ? 0.012 : -0.012)})`
@@ -85,7 +86,9 @@ const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
       );
     })}
 
-    {/* the seam */}
+    {/* The seam, only where two rooms actually meet. A single full-width set
+        is one place, and a line down the middle of it would invent a wall. */}
+    {scene.rooms.length > 1 ? (
     <div
       style={{
         position: "absolute",
@@ -98,11 +101,12 @@ const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
           " rgba(255,255,255,.26) 50%, rgba(31,42,60,.13) 55%, rgba(31,42,60,0) 100%)"
       }}
     />
+    ) : null}
 
     {/* which room is which, small, top corners */}
     {scene.rooms.map((room, i) => (
       <div
-        key={room.label}
+        key={room.set + i}
         style={{
           position: "absolute",
           top: 38,
@@ -118,7 +122,7 @@ const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
           padding: "8px 18px"
         }}
       >
-        {room.label}
+        {room.label ?? SETS[room.set].label}
       </div>
     ))}
   </AbsoluteFill>
@@ -132,6 +136,9 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+
+  /* A split scene is usually a phone call, but not always - see Scene.call. */
+  const isCall = scene.call !== false;
 
   /* ---------------------------------------------------------- the clock */
 
@@ -155,7 +162,7 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
   /* ------------------------------------------------------- the callout */
 
   const callout = line ? scene.callouts[line.i] : undefined;
-  const box = callout ? scene.anchors[callout.at] : undefined;
+  const box = callout ? findAnchor(scene.rooms, callout.at) : null;
   /* It waits for its word. Falls back to the start of the line if the scene
      file names a word that is not in it, which is a typo rather than a crash. */
   const calloutWord = callout && line
@@ -193,6 +200,7 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
             active={!!line && line.s === name}
             voicing={voicing && !!line && line.s === name}
             asking={!!line && line.s === name && line.de.trim().endsWith("?")}
+            phone={isCall}
             enter={arrive}
             seed={i * 2.7 + 1}
           />
@@ -228,6 +236,7 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
               left={(W - BUBBLE_WIDTH) / 2 + lean}
               bottom={92}
               tailX={tailX}
+              call={isCall}
             />
           );
         })()

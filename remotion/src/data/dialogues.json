@@ -154,5 +154,451 @@
         "endAt": 1482
       }
     ]
+  },
+  "c011": {
+    "id": "c011",
+    "title": "Die Waschmaschine ist voll",
+    "titleEn": "The washing machine is full",
+    "topic": "Alltag",
+    "tone": "#2f5d8a",
+    "fps": 30,
+    "intro": 62,
+    "outro": 150,
+    "durationInFrames": 1352,
+    "lines": [
+      {
+        "i": 0,
+        "s": "Shruti",
+        "de": "Kannst du die Wäsche aufhängen?",
+        "en": "Can you hang up the washing?",
+        "clip": "audio/c011/01.wav",
+        "enterAt": 62,
+        "audioAt": 71,
+        "audioFrames": 59,
+        "endAt": 154
+      },
+      {
+        "i": 1,
+        "s": "Sijan",
+        "de": "Ist die Maschine schon fertig?",
+        "en": "Is the machine finished already?",
+        "clip": "audio/c011/02.wav",
+        "enterAt": 154,
+        "audioAt": 163,
+        "audioFrames": 51,
+        "endAt": 238
+      },
+      {
+        "i": 2,
+        "s": "Shruti",
+        "de": "Ja, seit einer halben Stunde.",
+        "en": "Yes, half an hour ago.",
+        "clip": "audio/c011/03.wav",
+        "enterAt": 238,
+        "audioAt": 247,
+        "audioFrames": 71,
+        "endAt": 342
+      },
+      {
+        "i": 3,
+        "s": "Sijan",
+        "de": "Draußen regnet es leider.",
+        "en": "Unfortunately it's raining outside.",
+        "clip": "audio/c011/04.wav",
+        "enterAt": 342,
+        "audioAt": 351,
+        "audioFrames": 52,
+        "endAt": 427
+      },
+      {
+        "i": 4,
+        "s": "Shruti",
+        "de": "Dann häng sie im Bad auf.",
+        "en": "Then hang it up in the bathroom.",
+        "clip": "audio/c011/05.wav",
+        "enterAt": 427,
+        "audioAt": 436,
+        "audioFrames": 55,
+        "endAt": 515
+      },
+      {
+        "i": 5,
+        "s": "Sijan",
+        "de": "Der Ständer steht noch im Keller.",
+        "en": "The drying rack is still in the cellar.",
+        "clip": "audio/c011/06.wav",
+        "enterAt": 515,
+        "audioAt": 524,
+        "audioFrames": 59,
+        "endAt": 607
+      },
+      {
+        "i": 6,
+        "s": "Shruti",
+        "de": "Ich hole ihn gleich hoch.",
+        "en": "I'll bring it up in a minute.",
+        "clip": "audio/c011/07.wav",
+        "enterAt": 607,
+        "audioAt": 616,
+        "audioFrames": 46,
+        "endAt": 686
+      },
+      {
+        "i": 7,
+        "s": "Sijan",
+        "de": "Dein rotes Hemd hat gefärbt.",
+        "en": "Your red shirt has run.",
+        "clip": "audio/c011/08.wav",
+        "enterAt": 686,
+        "audioAt": 695,
+        "audioFrames": 54,
+        "endAt": 773
+      },
+      {
+        "i": 8,
+        "s": "Shruti",
+        "de": "Oh nein, sind die weißen Sachen jetzt rosa?",
+        "en": "Oh no, are the white things pink now?",
+        "clip": "audio/c011/09.wav",
+        "enterAt": 773,
+        "audioAt": 782,
+        "audioFrames": 93,
+        "endAt": 899
+      },
+      {
+        "i": 9,
+        "s": "Sijan",
+        "de": "Nur zwei Socken, das ist nicht schlimm.",
+        "en": "Only two socks, it's not that bad.",
+        "clip": "audio/c011/10.wav",
+        "enterAt": 899,
+        "audioAt": 908,
+        "audioFrames": 69,
+        "endAt": 1001
+      },
+      {
+        "i": 10,
+        "s": "Shruti",
+        "de": "Nächstes Mal wasche ich Rot getrennt.",
+        "en": "Next time I'll wash the reds separately.",
+        "clip": "audio/c011/11.wav",
+        "enterAt": 1001,
+        "audioAt": 1010,
+        "audioFrames": 69,
+        "endAt": 1103
+      },
+      {
+        "i": 11,
+        "s": "Sijan",
+        "de": "Bis morgen früh ist alles trocken.",
+        "en": "Everything will be dry by tomorrow morning.",
+        "clip": "audio/c011/12.wav",
+        "enterAt": 1103,
+        "audioAt": 1112,
+        "audioFrames": 66,
+        "endAt": 1202
+      }
+    ]
+  },
+  "c001": {
+    "id": "c001",
+    "title": "Der Wecker hat nicht geklingelt",
+    "titleEn": "The alarm didn't go off",
+    "topic": "Alltag",
+    "tone": "#2f5d8a",
+    "fps": 30,
+    "intro": 62,
+    "outro": 150,
+    "durationInFrames": 1470,
+    "lines": [
+      {
+        "i": 0,
+        "s": "Shruti",
+        "de": "Sijan, es ist schon halb acht!",
+        "en": "Sijan, it's already half past seven!",
+        "clip": "audio/c001/01.wav",
+        "enterAt": 62,
+        "audioAt": 71,
+        "audioFrames": 75,
+        "endAt": 170
+      },
+      {
+        "i": 1,
+        "s": "Sijan",
+        "de": "Was? Mein Wecker hat nicht geklingelt.",
+        "en": "What? My alarm didn't go off.",
+        "clip": "audio/c001/02.wav",
+        "enterAt": 170,
+        "audioAt": 179,
+        "audioFrames": 71,
+        "endAt": 274
+      },
+      {
+        "i": 2,
+        "s": "Shruti",
+        "de": "Hast du ihn gestern Abend gestellt?",
+        "en": "Did you set it last night?",
+        "clip": "audio/c001/03.wav",
+        "enterAt": 274,
+        "audioAt": 283,
+        "audioFrames": 67,
+        "endAt": 374
+      },
+      {
+        "i": 3,
+        "s": "Sijan",
+        "de": "Ich glaube schon. Vielleicht ist der Akku leer.",
+        "en": "I think so. Maybe the battery is dead.",
+        "clip": "audio/c001/04.wav",
+        "enterAt": 374,
+        "audioAt": 383,
+        "audioFrames": 82,
+        "endAt": 489
+      },
+      {
+        "i": 4,
+        "s": "Shruti",
+        "de": "Dein Bus fährt in zwanzig Minuten.",
+        "en": "Your bus leaves in twenty minutes.",
+        "clip": "audio/c001/05.wav",
+        "enterAt": 489,
+        "audioAt": 498,
+        "audioFrames": 74,
+        "endAt": 596
+      },
+      {
+        "i": 5,
+        "s": "Sijan",
+        "de": "Ich dusche ganz schnell und ziehe mich an.",
+        "en": "I'll shower really quickly and get dressed.",
+        "clip": "audio/c001/06.wav",
+        "enterAt": 596,
+        "audioAt": 605,
+        "audioFrames": 67,
+        "endAt": 696
+      },
+      {
+        "i": 6,
+        "s": "Shruti",
+        "de": "Soll ich dir ein Brot machen?",
+        "en": "Shall I make you a sandwich?",
+        "clip": "audio/c001/07.wav",
+        "enterAt": 696,
+        "audioAt": 705,
+        "audioFrames": 48,
+        "endAt": 777
+      },
+      {
+        "i": 7,
+        "s": "Sijan",
+        "de": "Ja bitte, das wäre super.",
+        "en": "Yes please, that would be great.",
+        "clip": "audio/c001/08.wav",
+        "enterAt": 777,
+        "audioAt": 786,
+        "audioFrames": 51,
+        "endAt": 861
+      },
+      {
+        "i": 8,
+        "s": "Shruti",
+        "de": "Kaffee hast du keine Zeit mehr.",
+        "en": "You don't have time for coffee any more.",
+        "clip": "audio/c001/09.wav",
+        "enterAt": 861,
+        "audioAt": 870,
+        "audioFrames": 75,
+        "endAt": 969
+      },
+      {
+        "i": 9,
+        "s": "Sijan",
+        "de": "Kein Problem, ich trinke einen im Büro.",
+        "en": "No problem, I'll have one at the office.",
+        "clip": "audio/c001/10.wav",
+        "enterAt": 969,
+        "audioAt": 978,
+        "audioFrames": 73,
+        "endAt": 1075
+      },
+      {
+        "i": 10,
+        "s": "Shruti",
+        "de": "Hier ist dein Schlüssel. Du vergisst ihn immer.",
+        "en": "Here's your key. You always forget it.",
+        "clip": "audio/c001/11.wav",
+        "enterAt": 1075,
+        "audioAt": 1084,
+        "audioFrames": 84,
+        "endAt": 1192
+      },
+      {
+        "i": 11,
+        "s": "Sijan",
+        "de": "Danke, Schatz! Heute Abend stelle ich zwei Wecker.",
+        "en": "Thanks, love! Tonight I'm setting two alarms.",
+        "clip": "audio/c001/12.wav",
+        "enterAt": 1192,
+        "audioAt": 1201,
+        "audioFrames": 95,
+        "endAt": 1320
+      }
+    ]
+  },
+  "c003": {
+    "id": "c003",
+    "title": "Ein Tisch für zwei",
+    "titleEn": "A table for two",
+    "topic": "Essen & Restaurant",
+    "tone": "#906925",
+    "fps": 30,
+    "intro": 62,
+    "outro": 150,
+    "durationInFrames": 1586,
+    "lines": [
+      {
+        "i": 0,
+        "s": "Shruti",
+        "de": "Guten Abend, haben Sie noch einen Tisch frei?",
+        "en": "Good evening, do you still have a table free?",
+        "clip": "audio/c003/01.wav",
+        "enterAt": 62,
+        "audioAt": 71,
+        "audioFrames": 95,
+        "endAt": 190
+      },
+      {
+        "i": 1,
+        "s": "Sijan",
+        "de": "Wir sind zu zweit und haben nicht reserviert.",
+        "en": "There are two of us and we haven't booked.",
+        "clip": "audio/c003/02.wav",
+        "enterAt": 190,
+        "audioAt": 199,
+        "audioFrames": 73,
+        "endAt": 296
+      },
+      {
+        "i": 2,
+        "s": "Shruti",
+        "de": "Der Tisch am Fenster wäre schön.",
+        "en": "The table by the window would be nice.",
+        "clip": "audio/c003/03.wav",
+        "enterAt": 296,
+        "audioAt": 305,
+        "audioFrames": 63,
+        "endAt": 392
+      },
+      {
+        "i": 3,
+        "s": "Sijan",
+        "de": "Die Speisekarte ist zum Glück auch auf Englisch.",
+        "en": "Luckily the menu is in English as well.",
+        "clip": "audio/c003/04.wav",
+        "enterAt": 392,
+        "audioAt": 401,
+        "audioFrames": 80,
+        "endAt": 505
+      },
+      {
+        "i": 4,
+        "s": "Shruti",
+        "de": "Ich nehme die Gemüsesuppe und einen Salat.",
+        "en": "I'll have the vegetable soup and a salad.",
+        "clip": "audio/c003/05.wav",
+        "enterAt": 505,
+        "audioAt": 514,
+        "audioFrames": 88,
+        "endAt": 626
+      },
+      {
+        "i": 5,
+        "s": "Sijan",
+        "de": "Ich hätte gern die Nudeln mit Tomatensoße.",
+        "en": "I'd like the pasta with tomato sauce.",
+        "clip": "audio/c003/06.wav",
+        "enterAt": 626,
+        "audioAt": 635,
+        "audioFrames": 88,
+        "endAt": 747
+      },
+      {
+        "i": 6,
+        "s": "Shruti",
+        "de": "Trinkst du ein Bier?",
+        "en": "Are you having a beer?",
+        "clip": "audio/c003/07.wav",
+        "enterAt": 747,
+        "audioAt": 756,
+        "audioFrames": 46,
+        "endAt": 826
+      },
+      {
+        "i": 7,
+        "s": "Sijan",
+        "de": "Nein, heute nur Wasser. Ich fahre noch.",
+        "en": "No, just water today. I'm driving later.",
+        "clip": "audio/c003/08.wav",
+        "enterAt": 826,
+        "audioAt": 835,
+        "audioFrames": 83,
+        "endAt": 942
+      },
+      {
+        "i": 8,
+        "s": "Shruti",
+        "de": "Das Essen kommt schnell hier.",
+        "en": "The food comes quickly here.",
+        "clip": "audio/c003/09.wav",
+        "enterAt": 942,
+        "audioAt": 951,
+        "audioFrames": 60,
+        "endAt": 1035
+      },
+      {
+        "i": 9,
+        "s": "Sijan",
+        "de": "Und es schmeckt wirklich gut.",
+        "en": "And it really tastes good.",
+        "clip": "audio/c003/10.wav",
+        "enterAt": 1035,
+        "audioAt": 1044,
+        "audioFrames": 45,
+        "endAt": 1113
+      },
+      {
+        "i": 10,
+        "s": "Shruti",
+        "de": "Sollen wir noch einen Nachtisch nehmen?",
+        "en": "Shall we have a dessert as well?",
+        "clip": "audio/c003/11.wav",
+        "enterAt": 1113,
+        "audioAt": 1122,
+        "audioFrames": 57,
+        "endAt": 1203
+      },
+      {
+        "i": 11,
+        "s": "Sijan",
+        "de": "Ich bin satt. Aber bestell du ruhig etwas.",
+        "en": "I'm full. But do order something.",
+        "clip": "audio/c003/12.wav",
+        "enterAt": 1203,
+        "audioAt": 1212,
+        "audioFrames": 77,
+        "endAt": 1313
+      },
+      {
+        "i": 12,
+        "s": "Shruti",
+        "de": "Dann bitte einmal Eis und die Rechnung zusammen.",
+        "en": "Then one ice cream and the bill together, please.",
+        "clip": "audio/c003/13.wav",
+        "enterAt": 1313,
+        "audioAt": 1322,
+        "audioFrames": 90,
+        "endAt": 1436
+      }
+    ]
   }
 }

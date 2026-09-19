@@ -42,13 +42,15 @@ type Props = {
   active: boolean;
   voicing: boolean;
   asking: boolean;
+  /** holding a handset to the ear; false when the two are in the same room */
+  phone: boolean;
   enter: number;
   /** keeps the blink and sway of the two characters out of step */
   seed: number;
 };
 
 export const Character: React.FC<Props> = ({
-  id, actor, facing, active, voicing, asking, enter, seed
+  id, actor, facing, active, voicing, asking, phone, enter, seed
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -120,18 +122,20 @@ export const Character: React.FC<Props> = ({
 
       {/* the arm that reaches for the ear: in front of the torso, behind the
           head, so the hand can then come back over the jaw */}
-      <g transform={`scale(${facing}, 1)`}>
-        {/* Starts inside the torso and finishes under the hand. An earlier
-            version stopped sixty pixels short and read as a sleeve lying on
-            the floor beside them. */}
-        <path
-          d="M130 300 Q196 158 96 48"
-          fill="none"
-          stroke={actor.top}
-          strokeWidth={34}
-          strokeLinecap="round"
-        />
-      </g>
+      {phone ? (
+        <g transform={`scale(${facing}, 1)`}>
+          {/* Starts inside the torso and finishes under the hand. An earlier
+              version stopped sixty pixels short and read as a sleeve lying on
+              the floor beside them. */}
+          <path
+            d="M130 300 Q196 158 96 48"
+            fill="none"
+            stroke={actor.top}
+            strokeWidth={34}
+            strokeLinecap="round"
+          />
+        </g>
+      ) : null}
 
       {/* --------------------------------------------------- hair behind head */}
       {actor.hairStyle === "bun" ? (
@@ -227,14 +231,17 @@ export const Character: React.FC<Props> = ({
 
       {/* ------------------------------------------------- the phone and hand */}
       {/* Last, so they sit over the ear and the jaw the way a hand actually
-          does. Both characters hold one — it is the only thing on screen that
-          says these two rooms are in the same conversation. */}
+          does. On a call this is the only thing on screen saying the two
+          rooms are in one conversation; in a shared flat it would be absurd,
+          so the scene turns it off. */}
+      {phone ? (
       <g transform={`scale(${facing}, 1)`}>
         <rect x={R - 20} y={-42} width={30} height={78} rx={9} fill="#39414e" />
         <rect x={R - 15} y={-35} width={20} height={58} rx={5} fill="#626b7a" />
         <ellipse cx={R - 4} cy={30} rx={24} ry={29} fill={actor.skin} />
         <ellipse cx={R - 8} cy={12} rx={13} ry={11} fill={actor.skin} />
       </g>
+      ) : null}
     </g>
   );
 };

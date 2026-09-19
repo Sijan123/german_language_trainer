@@ -202,32 +202,102 @@ It is not a third dataset. The renderer reads `js/conversations.js` and
 `js/audio-manifest.js`, so a film cannot disagree with the dialogue it came
 from, and the audio is the same Piper recording the other two modes play.
 
-### Running it
+### Making one: the workflow
 
-The renderer lives in `remotion/` and is a Node project. It is **not** part of
-the site: nothing in `index.html` loads it, and the site works with the whole
-folder deleted. What ships is `video/<id>.mp4` and the poster beside it.
+Two commands, and a file to read in between.
 
 ```
 cd remotion
-npm install
-pip install torch torchaudio numpy --index-url https://download.pytorch.org/whl/cpu
-
-node scripts/render.mjs c002             # one dialogue
-node scripts/render.mjs --all            # every dialogue that has a scene
-node scripts/render.mjs c002 --no-align  # skip the slow forced-alignment step
-npm run studio                           # Remotion Studio, to watch one while editing
+npm run new  c001          # scaffold the staging
+                           # -> open src/scenes/c001.ts and answer its TODOs
+npm run film c001          # align, render, transcode, ship, update the manifest
 ```
 
-Five steps: probe every clip with `ffprobe` and write the timeline
-(`scripts/build-data.mjs`), find the word boundaries with a forced aligner
-(`scripts/align.py`), render a 1080p master, transcode it to a 720p
-`video/<id>.mp4`, and grab a poster. Then it rewrites `js/video-manifest.js`
-from whatever is actually in `video/`, because a manifest kept in step by hand
-is one that will eventually promise a file that is not there.
+`npm run new` writes a first draft of the staging by reading the dialogue, the
+set registry and the app's own `js/vocab.js`. It works out:
 
-You need `ffmpeg` and `ffprobe` on the path. Remotion downloads its own
-Chromium and torchaudio its own alignment model (~1 GB), both on first run.
+| it decides | how |
+|---|---|
+| which rooms | the dialogue's topic, via `TOPIC_ROOMS` |
+| who stands where | one speaker per room, at the positions that leave the bubble room |
+| callouts | matches each line's nouns against the keyword lists the sets publish |
+| Wortschatz | looks the dialogue's nouns up in `js/vocab.js`, so the film and the Vokabeln tab never disagree |
+
+A callout is only proposed for a word `vocab.js` knows **as a noun**. German
+capitalises its nouns, but it also capitalises the first word of a sentence,
+and matching on capitals alone put a ring round "Draußen".
+
+What it cannot decide, and marks `TODO`:
+
+- **Are these two together, or on the phone?** It always splits them, because
+  that is right more often. c001 is the exception — a couple at half past
+  seven, her in the kitchen, him only just out of bed — so its scene sets
+  `call: false` and nobody holds a handset.
+- **Is the room right, and is the person in the right one?** It puts whoever
+  speaks first on the left. In c001 that is Shruti, but the left room is the
+  bedroom and the person in it has to be the one whose alarm failed, so they
+  were swapped by hand.
+- **Does each callout earn its place?** Four on a twelve-line dialogue is
+  plenty. A pointer that fires every line is wallpaper.
+
+`npm run film` then runs the whole pipeline and prints what it shipped. Add
+`--no-align` to skip forced alignment when you are iterating on the look; the
+karaoke falls back to lighting whole lines at once, which is wrong but not
+broken.
+
+### The sets
+
+A set is a drawing, the boxes on it a callout can point at, and the words that
+should send a callout to each box — all three in one file, so they cannot drift
+apart. They used to be split, and the first time a room moved, its callouts
+stayed behind pointing at nothing.
+
+Four exist:
+
+| set | width | anchors |
+|---|---|---|
+| `supermarkt` | left half | `kuehlregal` `auslage` `kasse` |
+| `schlafzimmer` | left half | `bett` `wecker` `fenster` |
+| `kueche` | right half | `vorrat` `kuchen` `fruehstueck` `fenster` |
+| `wohnzimmer` | right half | `sofa` `regal` `fenster` `heizung` `tisch` |
+| `restaurant` | **full frame** | `tisch` `speisekarte` `essen` `getraenk` `fenster` |
+
+**One room or two.** Most dialogues are a phone call, so the frame splits and
+each speaker gets a half. Some are not: c003 is two people at one restaurant
+table. A topic whose `TOPIC_ROOMS` entry names a single set gets one
+full-width room, both speakers in it, and `call: false` — no handsets, no
+phone glyph on the name chip, no seam down the middle. The scaffolder writes
+all of that itself when the topic has one set.
+
+A full-frame set declares `width: 1920`; a half-frame one declares `960`. The
+room honours the set's width, not its own, so a half-frame drawing dropped
+into a full-frame room leaves the other half empty rather than stretching.
+
+"Drawn for" — the `origin` field — is which half a set's `viewBox` starts in. A set can still be used
+in the other half — `findAnchor` shifts its boxes to match — but that shift is
+the reason the field exists, and forgetting it once put a living room on the
+left with its callouts landing in the kitchen on the right.
+
+Two rules hold across every room, both learned the hard way:
+
+- **The horizon is y=648 everywhere.** Two rooms side by side with floors at
+  different heights look like a collage.
+- **Nothing a callout points at may sit below y=648.** The speech bubble covers
+  the bottom third, so an object down there is named by a subtitle drawn on top
+  of it. The kitchen's first worktop was at 748 and the cake spent the whole
+  film hidden behind the words naming it.
+
+Adding a room: draw it in `src/components/sets/` using the parts in `kit.tsx`,
+export its component, anchors and keywords, add a line to `SETS`, and list it
+in `TOPIC_ROOMS` for the topics it suits. **This is the real cost of a new
+film** — everything else is data. Nine of the sixteen topics have no room yet
+and fall back to a flat, which the scaffolder says out loud rather than
+quietly producing an office conversation set in a living room.
+
+Things a room has to respect, beyond the two rules above: leave the middle of
+each half clear, because a figure stands there for the whole film, and give a
+callout target enough size to survive a ring round it at 720p. The bedroom is
+built around an alarm clock for exactly that reason.
 
 ### Three files describe a film
 
@@ -235,11 +305,13 @@ Chromium and torchaudio its own alignment model (~1 GB), both on first run.
 |---|---|---|
 | `src/data/dialogues.json` | `scripts/build-data.mjs` | when each line opens, when its clip starts |
 | `src/data/words.json` | `scripts/align.py` | where every word sits inside its clip |
-| `src/scenes/<id>.ts` | a person | which room each speaker is in, what they look like, what the callouts point at |
+| `src/scenes/<id>.ts` | `npm run new`, then you | rooms, cast, callouts, Wortschatz |
 
-They stay apart on disk because three different things produce them at three
-different times — merging them would mean re-running the aligner every time a
-clip's length changed. `src/data.ts` joins them at load.
+They stay apart because three different things produce them at three different
+times; merging them would mean re-running the aligner every time a clip's
+length changed. `src/data.ts` joins them at load, and throws there if a scene
+points at an anchor none of its rooms has — a typo should stop the render, not
+show up as a ring that silently never appears.
 
 ### Why the karaoke is real
 
@@ -256,31 +328,18 @@ interpolation, and "Selbstbedienungskasse" correctly holds 1.27 seconds.
 
 The same timings drive the mouths. The gaps between words are real, so the
 characters' mouths close in them. That is a talking cycle honestly paced, not
-lip-sync: nothing here knows which phoneme is in the air, and a mouth
-pretending to would be inventing data.
+lip-sync: nothing here knows which phoneme is in the air.
 
-### Why c002 is two rooms
+### Installing it
 
-Read the script and it is plainly a phone call. Sijan is in the shop ("Die
-Milch ist leider aus"), Shruti is not ("Ich backe am Wochenende einen Kuchen"),
-and it ends with "Ich bin in fünf Minuten zu Hause". Standing them side by side
-in one aisle would have been easier and would have quietly contradicted the
-last line of the dialogue.
+```
+cd remotion
+npm install
+pip install torch torchaudio numpy --index-url https://download.pytorch.org/whl/cpu
+```
 
-Both rooms put their worktop and floor on the same horizon, at y=648. That is
-not decoration: everything below it is covered by the speech bubble, so any
-object a callout points at has to live above it.
-
-### Adding a dialogue
-
-Write `remotion/src/scenes/<id>.ts` — rooms, cast, anchors, callouts,
-Wortschatz — register it in `src/data.ts`, and run the renderer. A dialogue
-with timings but no scene file has no room to stand in, so it is skipped rather
-than registered as a composition that fails on open.
-
-The two sets that exist are a supermarket and a kitchen. **A dialogue on a
-different topic needs its own set drawn**, which is the real cost of a new
-film — the rest is data.
+`ffmpeg` and `ffprobe` have to be on the path. Remotion downloads its own
+Chromium and torchaudio its own alignment model (~1 GB), both on first run.
 
 ### Other notes
 

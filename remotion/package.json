@@ -5,9 +5,11 @@
   "description": "Renders a Gespräch into an animated, audio-synced video the trainer can play inline.",
   "type": "module",
   "scripts": {
+    "new": "node scripts/new-scene.mjs",
     "data": "node scripts/build-data.mjs",
+    "align": "python scripts/align.py",
     "studio": "remotion studio src/index.ts",
-    "render": "node scripts/render.mjs"
+    "film": "node scripts/render.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.407",

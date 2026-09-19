@@ -1,105 +1,46 @@
 /*
  * The shop. One aisle seen head-on, drawn flat.
  *
- * Everything is one 960x1080 SVG in full-frame coordinates, which is why the
- * viewBox starts at 0 and the room is placed by its wrapper rather than by
- * translating the art. A callout in src/scenes/c002.ts points at boxes in the
- * same coordinates, so the orange ring lands on the fridge because both agree
- * on where the fridge is — not because anything measured it.
+ * The set owns its anchors. A callout says "point at the kuehlregal" and the
+ * ring lands on the same constant the fridge is drawn from, so it cannot drift
+ * off the thing it is naming. The boxes used to be written out a second time
+ * in the scene file, and the first time this set moved, the callouts stayed
+ * behind.
  *
- * Flat, not shaded: the set is a backdrop for text, and every gradient and
- * drop shadow put behind a subtitle is contrast taken away from it. The only
- * depth here comes from the shelves getting darker as they go back, which is
- * enough to read as a room.
+ * Shared parts come from ./kit — wall, floor, shelves, signs — so a new room
+ * is assembled rather than drawn from nothing.
  */
 
 import React from "react";
 import { theme } from "../../theme";
+import { Floor, Products, Shelf, Sign, Wall } from "./kit";
+import type { Anchor } from "../../types";
 
 const c = theme.set.shop;
-const P = theme.set.products;
 
-/* A deterministic shuffle, so the shelves look random and render identically
-   every time. Math.random() here would make every frame a different shop. */
-const pick = (n: number) => P[(n * 7 + 3) % P.length];
-
-/** One run of product blocks along a shelf board. */
-const Products: React.FC<{
-  x: number; y: number; w: number; h: number; n: number; seed: number;
-}> = ({ x, y, w, h, n, seed }) => {
-  const gap = 4;
-  const bw = (w - gap * (n - 1)) / n;
-  return (
-    <>
-      {Array.from({ length: n }, (_, i) => {
-        const k = seed * 13 + i;
-        /* Boxes are not all the same height or a shelf looks like a bar chart. */
-        const bh = h * (0.68 + ((k * 17) % 5) / 14);
-        return (
-          <rect
-            key={i}
-            x={x + i * (bw + gap)}
-            y={y + h - bh}
-            width={bw}
-            height={bh}
-            rx={2}
-            fill={pick(k)}
-          />
-        );
-      })}
-    </>
-  );
+/** Everything on this set a callout can point at. */
+export const supermarktAnchors: Record<string, Anchor> = {
+  kuehlregal: { x: 424, y: 330, w: 372, h: 268 },
+  auslage: { x: 812, y: 536, w: 138, h: 104 },
+  kasse: { x: 818, y: 168, w: 132, h: 62 }
 };
 
-/** A shelf unit: the carcass, its boards, and what is standing on them. */
-const Shelf: React.FC<{
-  x: number; y: number; w: number; h: number; rows: number; per: number; seed: number;
-}> = ({ x, y, w, h, rows, per, seed }) => {
-  const rowH = h / rows;
-  return (
-    <>
-      <rect x={x} y={y} width={w} height={h} fill={c.shelf} />
-      {Array.from({ length: rows }, (_, r) => (
-        <React.Fragment key={r}>
-          <Products
-            x={x + 7}
-            y={y + r * rowH + 6}
-            w={w - 14}
-            h={rowH - 15}
-            n={per}
-            seed={seed + r}
-          />
-          <rect x={x} y={y + (r + 1) * rowH - 7} width={w} height={7} fill={c.shelfEdge} />
-        </React.Fragment>
-      ))}
-    </>
-  );
+/*
+ * Which German words should send a callout here.
+ *
+ * scripts/new-scene.mjs matches the words of a dialogue against these to
+ * propose callouts, so a new shop scene arrives with "die Milch" already
+ * pointing at the fridge instead of with an empty list to fill in by hand.
+ * Matching is case-insensitive and ignores punctuation.
+ */
+export const supermarktKeywords: Record<string, string[]> = {
+  kuehlregal: ["milch", "hafermilch", "butter", "käse", "joghurt", "kühlregal", "sahne", "quark", "eis"],
+  auslage: ["brot", "brötchen", "ei", "eier", "tomate", "tomaten", "obst", "gemüse",
+            "salat", "apfel", "äpfel", "banane", "kuchen", "auslage"],
+  kasse: ["kasse", "selbstbedienungskasse", "schlange", "bezahlen", "bon", "kassenbon", "kassiererin"]
 };
 
-/** The hanging signs. Dark plate, white type — readable at any size. */
-const Sign: React.FC<{
-  x: number; y: number; w: number; h: number; text: string; drop?: number;
-}> = ({ x, y, w, h, text, drop }) => (
-  <>
-    {drop ? (
-      <rect x={x + w / 2 - 2} y={y - drop} width={4} height={drop} fill={c.chrome} />
-    ) : null}
-    <rect x={x} y={y} width={w} height={h} rx={6} fill={c.sign} />
-    <text
-      x={x + w / 2}
-      y={y + h / 2}
-      fill={c.signInk}
-      fontFamily={theme.font.body}
-      fontWeight={700}
-      fontSize={h * 0.5}
-      letterSpacing={h * 0.06}
-      textAnchor="middle"
-      dominantBaseline="central"
-    >
-      {text}
-    </text>
-  </>
-);
+const A = supermarktAnchors;
 
 export const Supermarkt: React.FC = () => (
   <svg
@@ -109,31 +50,8 @@ export const Supermarkt: React.FC = () => (
     style={{ display: "block" }}
     shapeRendering="geometricPrecision"
   >
-    {/* wall, then floor: the horizon is the only line that says "room" */}
-    <rect x={0} y={0} width={960} height={648} fill={c.wall} />
-    <rect x={0} y={0} width={960} height={140} fill={c.wallDark} />
-    <rect x={0} y={648} width={960} height={432} fill={c.floor} />
-
-    {/* Floor joints, converging on a vanishing point off to the right of the
-        room so the aisle reads as running away from the camera. */}
-    {Array.from({ length: 7 }, (_, i) => {
-      const vx = 700;
-      const x0 = -260 + i * 300;
-      return (
-        <line
-          key={i}
-          x1={x0}
-          y1={1080}
-          x2={vx + (x0 - vx) * 0.12}
-          y2={648}
-          stroke={c.floorLine}
-          strokeWidth={3}
-        />
-      );
-    })}
-    {[700, 790, 880, 980].map((y, i) => (
-      <line key={i} x1={0} y1={y} x2={960} y2={y} stroke={c.floorLine} strokeWidth={3} />
-    ))}
+    <Wall x={0} palette={c} />
+    <Floor x={0} palette={c} vanishAt={700} />
 
     {/* ceiling strip lights */}
     {[0, 1, 2].map((i) => (
@@ -149,22 +67,35 @@ export const Supermarkt: React.FC = () => (
       />
     ))}
 
-    {/* the aisle on the left, going back in three steps */}
-    <Shelf x={-30} y={210} w={210} h={438} rows={4} per={5} seed={1} />
+    {/* the aisle on the left, going back in two steps */}
+    <Shelf x={-30} y={210} w={210} h={438} rows={4} per={5} seed={1} palette={c} />
     <rect x={172} y={230} width={16} height={418} fill={c.shelfDark} opacity={0.35} />
-    <Shelf x={188} y={268} w={132} h={380} rows={4} per={4} seed={6} />
+    <Shelf x={188} y={268} w={132} h={380} rows={4} per={4} seed={6} palette={c} />
 
-    {/* KÜHLREGAL - the fridge run. This box is the `kuehlregal` anchor. */}
-    <rect x={424} y={330} width={372} height={268} fill={c.chrome} />
-    <rect x={434} y={340} width={352} height={248} fill={c.glass} />
+    {/* --------------------------------------------------- anchor: kuehlregal */}
+    <rect x={A.kuehlregal.x} y={A.kuehlregal.y} width={A.kuehlregal.w} height={A.kuehlregal.h} fill={c.chrome} />
+    <rect
+      x={A.kuehlregal.x + 10}
+      y={A.kuehlregal.y + 10}
+      width={A.kuehlregal.w - 20}
+      height={A.kuehlregal.h - 20}
+      fill={c.glass}
+    />
     {[0, 1, 2, 3].map((col) => (
       <React.Fragment key={col}>
-        <rect x={438 + col * 88} y={344} width={80} height={240} fill={c.glassDark} opacity={0.35} />
+        <rect
+          x={A.kuehlregal.x + 14 + col * 88}
+          y={A.kuehlregal.y + 14}
+          width={80}
+          height={A.kuehlregal.h - 28}
+          fill={c.glassDark}
+          opacity={0.35}
+        />
         {[0, 1, 2].map((row) => (
           <Products
             key={row}
-            x={444 + col * 88}
-            y={352 + row * 78}
+            x={A.kuehlregal.x + 20 + col * 88}
+            y={A.kuehlregal.y + 22 + row * 78}
             w={68}
             h={58}
             n={3}
@@ -175,30 +106,27 @@ export const Supermarkt: React.FC = () => (
     ))}
     {/* the sheen that says "glass" without a gradient */}
     <polygon points="450,344 500,344 470,584 434,584" fill="#ffffff" opacity={0.22} />
-    {/* The header band sits on the fridge rather than floating above it. Above
-        it, the callout ring round the fridge collided with it on every line
-        that pointed here, and the arrow ran straight through the lettering. */}
-    <Sign x={500} y={344} w={220} h={40} text="KÜHLREGAL" />
+    {/* The header band sits on the fridge rather than floating above it: above
+        it, the callout ring collided with the lettering on every line that
+        pointed here, and the arrow ran through it. */}
+    <Sign x={500} y={344} w={220} h={40} text="KÜHLREGAL" palette={c} />
 
-    {/* the produce table - the `auslage` anchor. Eggs, bread and tomatoes all
-        live here, which is why the callout for three different lines lands on
-        the same box. */}
-    <rect x={826} y={640} width={14} height={120} fill={c.woodDark} />
-    <rect x={922} y={640} width={14} height={120} fill={c.woodDark} />
-    <rect x={812} y={624} width={138} height={18} rx={3} fill={c.wood} />
-    <rect x={812} y={536} width={138} height={90} rx={6} fill={c.woodDark} opacity={0.22} />
-    {/* bread */}
+    {/* ------------------------------------------------------ anchor: auslage */}
+    {/* Bread, eggs and tomatoes share one table, which is why three different
+        lines send their callout to the same box. */}
+    <rect x={A.auslage.x + 14} y={640} width={14} height={120} fill={c.woodDark} />
+    <rect x={A.auslage.x + 110} y={640} width={14} height={120} fill={c.woodDark} />
+    <rect x={A.auslage.x} y={624} width={A.auslage.w} height={18} rx={3} fill={c.wood} />
+    <rect x={A.auslage.x} y={A.auslage.y} width={A.auslage.w} height={90} rx={6} fill={c.woodDark} opacity={0.22} />
     {[0, 1, 2].map((i) => (
-      <ellipse key={i} cx={840 + i * 35} cy={608} rx={19} ry={12} fill={c.bread} />
+      <ellipse key={i} cx={A.auslage.x + 28 + i * 35} cy={608} rx={19} ry={12} fill={c.bread} />
     ))}
-    {/* tomatoes */}
     {[0, 1, 2, 3].map((i) => (
-      <circle key={i} cx={832 + i * 30} cy={572} r={13} fill="#c4614f" />
+      <circle key={i} cx={A.auslage.x + 20 + i * 30} cy={572} r={13} fill="#c4614f" />
     ))}
-    {/* egg tray */}
-    <rect x={818} y={540} width={126} height={20} rx={4} fill="#e6e2d6" />
+    <rect x={A.auslage.x + 6} y={A.auslage.y + 4} width={126} height={20} rx={4} fill="#e6e2d6" />
 
-    {/* KASSE, away at the top of the aisle - the `kasse` anchor */}
-    <Sign x={818} y={168} w={132} h={62} text="KASSE" drop={104} />
+    {/* -------------------------------------------------------- anchor: kasse */}
+    <Sign x={A.kasse.x} y={A.kasse.y} w={A.kasse.w} h={A.kasse.h} text="KASSE" drop={104} palette={c} />
   </svg>
 );

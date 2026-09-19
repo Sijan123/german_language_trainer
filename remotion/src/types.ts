@@ -58,14 +58,14 @@ export type Dialogue = {
 /* Hand-authored                                                       */
 /* ------------------------------------------------------------------ */
 
-export type SetName = "supermarkt" | "kueche";
-
 export type Room = {
-  set: SetName;
-  label: string;
+  /** a key of SETS in components/sets/index.ts */
+  set: string;
   /** the x range of the frame this room occupies */
   from: number;
   to: number;
+  /** overrides the set's own label, for a room used as somewhere specific */
+  label?: string;
 };
 
 export type Actor = {
@@ -98,10 +98,22 @@ export type Callout = {
 
 export type Scene = {
   id: string;
+  /**
+   * Are the two on the phone, or in the same place?
+   *
+   * A call puts a handset in each hand and a phone glyph on the name chip. Two
+   * people in one flat calling each other looks absurd, and c001 - one of them
+   * in bed, the other in the kitchen - is exactly that case. Defaults to true
+   * because a split scene usually is a call.
+   */
+  call?: boolean;
   rooms: Room[];
   cast: Record<string, Actor>;
-  anchors: Record<string, Anchor>;
-  /** keyed by line index; most lines have none */
+  /**
+   * Keyed by line index; most lines have none. `at` is an anchor id belonging
+   * to one of this scene's rooms — the sets own their anchors, so a callout
+   * cannot point at a box that has moved out from under it.
+   */
   callouts: Record<number, Callout>;
   wortschatz: { de: string; en: string }[];
 };

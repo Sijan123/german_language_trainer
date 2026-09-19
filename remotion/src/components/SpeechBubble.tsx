@@ -31,9 +31,13 @@ type Props = {
   /** the bubble's own left edge and bottom edge in the frame */
   left: number;
   bottom: number;
+  /** a phone glyph on the name chip, for dialogues that are calls */
+  call: boolean;
 };
 
-export const SpeechBubble: React.FC<Props> = ({ line, tailX, index, total, left, bottom }) => {
+export const SpeechBubble: React.FC<Props> = ({
+  line, tailX, index, total, left, bottom, call
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const color = speakerColor(line.s);
@@ -115,14 +119,16 @@ export const SpeechBubble: React.FC<Props> = ({ line, tailX, index, total, left,
               letterSpacing: "0.02em"
             }}
           >
-            {/* a phone glyph, because every line in this dialogue is one end of
-                a call and the chip is where that belongs */}
-            <svg width={17} height={17} viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1a11.4 11.4 0 0 0 .57 3.6a1 1 0 0 1-.25 1z"
-                fill="#ffffff"
-              />
-            </svg>
+            {/* A phone glyph when the line is one end of a call, and nothing
+                when the two are in the same flat. */}
+            {call ? (
+              <svg width={17} height={17} viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1a11.4 11.4 0 0 0 .57 3.6a1 1 0 0 1-.25 1z"
+                  fill="#ffffff"
+                />
+              </svg>
+            ) : null}
             {line.s}
           </span>
 

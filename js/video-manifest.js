@@ -13,7 +13,9 @@
  */
 
 export const VIDEO = {
-  "c002": { seconds: 54.4, lines: 13 }
+  "c001": { seconds: 49, lines: 12 },
+  "c002": { seconds: 54.4, lines: 13 },
+  "c003": { seconds: 52.87, lines: 13 }
 };
 
 /** What the player needs for this dialogue, or null if it has no film. */

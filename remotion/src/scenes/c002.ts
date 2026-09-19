@@ -12,8 +12,9 @@
  * Hause". Putting them side by side in one aisle would have been easier and
  * would have quietly contradicted the last line of the dialogue.
  *
- * Anchors are in full-frame coordinates (1920x1080), not room coordinates, so a
- * callout never has to know which half of the screen it is pointing into.
+ * The anchors a callout can name live with the set that draws them, in
+ * components/sets/, not here. They used to be copied into this file and the
+ * first time a room moved they stayed behind, pointing at nothing.
  */
 
 import type { Scene } from "../types";
@@ -22,8 +23,9 @@ export const c002: Scene = {
   id: "c002",
 
   rooms: [
-    { set: "supermarkt", label: "Supermarkt", from: 0, to: 960 },
-    { set: "kueche", label: "Zu Hause", from: 960, to: 1920 }
+    { set: "supermarkt", from: 0, to: 960 },
+    /* Labelled for the contrast with the shop rather than as a room. */
+    { set: "kueche", from: 960, to: 1920, label: "Zu Hause" }
   ],
 
   /*
@@ -62,20 +64,6 @@ export const c002: Scene = {
       topDark: "#89455a",
       basket: false
     }
-  },
-
-  /*
-   * Named places on the set a callout can point at, in full-frame coordinates.
-   * The sets draw these objects at exactly these boxes — if one moves in the
-   * drawing it has to move here, which is the price of not measuring the DOM.
-   */
-  anchors: {
-    kuehlregal: { x: 424, y: 330, w: 372, h: 268 },
-    auslage: { x: 812, y: 536, w: 138, h: 104 },
-    kasse: { x: 818, y: 168, w: 132, h: 62 },
-    vorrat: { x: 1016, y: 396, w: 270, h: 70 },
-    kuchen: { x: 1120, y: 528, w: 196, h: 120 },
-    fenster: { x: 1332, y: 196, w: 252, h: 214 }
   },
 
   /*

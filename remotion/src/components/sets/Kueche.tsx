@@ -1,29 +1,45 @@
 /*
- * The kitchen at home, where the other half of the phone call is standing.
+ * The kitchen at home.
  *
- * Same trick as the shop: one SVG whose viewBox is already in full-frame
- * coordinates — it starts at x=960 rather than 0 — so the callout boxes in
- * src/scenes/c002.ts can be written once and land in either room without
- * anyone converting anything.
+ * Its viewBox starts at x=960, so it is authored in full-frame coordinates and
+ * drops into the right-hand room with nothing to convert.
  *
- * It is warmer than the shop on purpose. The two rooms are on screen together
- * for the whole film and the only thing telling you they are different places
- * is how they are lit, so the shop is cool and fluorescent and this is not.
+ * Warmer than the shop on purpose. The two rooms are on screen together for
+ * the whole film and the only thing telling you they are different places is
+ * how they are lit, so the shop is cool and fluorescent and this is not.
  *
- * The worktop sits on the same horizon as the shop floor, at y=648. That is
- * not decoration: everything below it is hidden by the speech bubble, so every
- * object a callout can point at - the jars, the baking - has to live above it.
- * The first version put the worktop at 748 and the cake spent the whole film
- * behind the subtitle that was naming it.
+ * The worktop sits on the shared horizon at y=648. Everything below that is
+ * covered by the speech bubble, so every object a callout can point at — the
+ * jars, the baking — has to live above it. The first version put the worktop
+ * at 748 and the cake spent the whole film behind the subtitle naming it.
  */
 
 import React from "react";
 import { theme } from "../../theme";
+import { Cabinets, Counter, HORIZON, Wall, Window } from "./kit";
+import type { Anchor } from "../../types";
 
 const c = theme.set.kitchen;
 const P = theme.set.products;
 
-const COUNTER_Y = 648;
+/** Everything on this set a callout can point at. */
+export const kuecheAnchors: Record<string, Anchor> = {
+  vorrat: { x: 1016, y: 396, w: 270, h: 70 },
+  kuchen: { x: 1120, y: 528, w: 196, h: 120 },
+  fruehstueck: { x: 1392, y: 556, w: 214, h: 92 },
+  fenster: { x: 1332, y: 196, w: 252, h: 214 }
+};
+
+/** Which German words should send a callout here. See Supermarkt for why. */
+export const kuecheKeywords: Record<string, string[]> = {
+  vorrat: ["marmelade", "glas", "zucker", "mehl", "salz", "kaffee", "tee", "vorrat", "regal", "honig", "öl"],
+  kuchen: ["kuchen", "backen", "backe", "teig", "schüssel", "topf", "kochen", "koche", "essen", "form"],
+  fruehstueck: ["brot", "brötchen", "frühstück", "kaffee", "tee", "tasse", "butter",
+                "marmelade", "müsli", "teller", "messer"],
+  fenster: ["fenster", "wetter", "regnet", "regen", "sonne", "draußen", "kalt", "warm", "schnee"]
+};
+
+const A = kuecheAnchors;
 
 /** A jar on the store shelf. The marmalade is one of these. */
 const Jar: React.FC<{ x: number; y: number; w: number; h: number; fill: string }> = ({
@@ -43,8 +59,7 @@ export const Kueche: React.FC = () => (
     style={{ display: "block" }}
     shapeRendering="geometricPrecision"
   >
-    <rect x={960} y={0} width={960} height={1080} fill={c.wall} />
-    <rect x={960} y={0} width={960} height={120} fill={c.wallDark} />
+    <Wall x={960} palette={c} ceiling={120} />
 
     {/* the tiled strip behind the worktop */}
     <rect x={960} y={472} width={960} height={176} fill={c.tile} />
@@ -54,7 +69,7 @@ export const Kueche: React.FC = () => (
         x1={960 + i * 58}
         y1={472}
         x2={960 + i * 58}
-        y2={COUNTER_Y}
+        y2={HORIZON}
         stroke={c.wallDark}
         strokeWidth={2}
         opacity={0.55}
@@ -62,69 +77,61 @@ export const Kueche: React.FC = () => (
     ))}
     <line x1={960} y1={560} x2={1920} y2={560} stroke={c.wallDark} strokeWidth={2} opacity={0.55} />
 
-    {/* wall cabinets */}
-    {[0, 1].map((i) => (
-      <React.Fragment key={i}>
-        <rect x={990 + i * 158} y={206} width={150} height={172} rx={6} fill={c.cabinet} />
-        <rect x={1002 + i * 158} y={218} width={126} height={148} rx={4} fill={c.cabinetDark} opacity={0.35} />
-        <rect x={i === 0 ? 1112 : 1148} y={286} width={12} height={44} rx={6} fill="#8d9389" />
-      </React.Fragment>
-    ))}
+    <Cabinets x={990} y={206} w={310} h={172} palette={c} />
 
-    {/* the open shelf under them - the `vorrat` anchor, where the jam lives */}
-    <rect x={1012} y={462} width={278} height={9} rx={3} fill={c.wood} />
-    <Jar x={1026} y={400} w={40} h={62} fill={c.jar} />
-    <Jar x={1076} y={408} w={36} h={54} fill="#a8623f" />
-    <Jar x={1122} y={404} w={38} h={58} fill="#cf9a4e" />
-    <Jar x={1170} y={414} w={34} h={48} fill="#8f6f4a" />
-    <Jar x={1214} y={402} w={40} h={60} fill="#b8523f" />
+    {/* ------------------------------------------------------- anchor: vorrat */}
+    <rect x={A.vorrat.x - 4} y={A.vorrat.y + 66} width={278} height={9} rx={3} fill={c.wood} />
+    <Jar x={A.vorrat.x + 10} y={A.vorrat.y + 4} w={40} h={62} fill={c.jar} />
+    <Jar x={A.vorrat.x + 60} y={A.vorrat.y + 12} w={36} h={54} fill="#a8623f" />
+    <Jar x={A.vorrat.x + 106} y={A.vorrat.y + 8} w={38} h={58} fill="#cf9a4e" />
+    <Jar x={A.vorrat.x + 154} y={A.vorrat.y + 18} w={34} h={48} fill="#8f6f4a" />
+    <Jar x={A.vorrat.x + 198} y={A.vorrat.y + 6} w={40} h={60} fill="#b8523f" />
 
-    {/* the window - the daylight that makes this room not the shop */}
-    <rect x={1332} y={196} width={252} height={214} rx={4} fill="#cbbfa8" />
-    <rect x={1344} y={208} width={228} height={190} fill={c.sky} />
-    <rect x={1344} y={312} width={228} height={86} fill={c.skyLow} />
-    {/* a couple of roofs across the way, so it is a window and not a blue card */}
-    <polygon points="1360,346 1404,312 1448,346 1448,398 1360,398" fill="#b9c3c0" opacity={0.75} />
-    <polygon points="1466,358 1512,320 1558,358 1558,398 1466,398" fill="#c6cfcb" opacity={0.75} />
-    <circle cx={1530} cy={250} r={22} fill="#f2e6c8" opacity={0.85} />
-    <line x1={1458} y1={208} x2={1458} y2={398} stroke="#cbbfa8" strokeWidth={9} />
-    <line x1={1344} y1={306} x2={1572} y2={306} stroke="#cbbfa8" strokeWidth={9} />
+    {/* ------------------------------------------------------ anchor: fenster */}
+    {/* the daylight that makes this room not the shop */}
+    <Window x={A.fenster.x} y={A.fenster.y} w={A.fenster.w} h={A.fenster.h} palette={c} />
 
-    {/* worktop and the units under it */}
-    <rect x={960} y={COUNTER_Y} width={960} height={22} fill={c.counterTop} />
-    <rect x={960} y={COUNTER_Y + 22} width={960} height={1080 - COUNTER_Y - 22} fill={c.counter} />
-    {[1000, 1240, 1480, 1720].map((x, i) => (
-      <line key={i} x1={x} y1={COUNTER_Y + 22} x2={x} y2={1080} stroke={c.wood} strokeWidth={3} opacity={0.4} />
-    ))}
-    {[1100, 1340, 1580, 1820].map((x, i) => (
-      <rect key={i} x={x} y={730} width={64} height={9} rx={4} fill={c.wood} opacity={0.75} />
-    ))}
+    <Counter x={960} palette={c} />
 
-    {/* the baking in progress - the `kuchen` anchor. A bowl, a whisk and a tin:
-        she says she is baking a cake at the weekend, so it is set out, not
-        finished. */}
-    <ellipse cx={1176} cy={COUNTER_Y - 4} rx={52} ry={12} fill={c.wood} opacity={0.22} />
-    <path
-      d={`M1126 ${COUNTER_Y - 68} h100 l-13 60 a37 16 0 0 1 -74 0 z`}
-      fill={c.pot}
+    {/* ------------------------------------------------------- anchor: kuchen */}
+    {/* A bowl, a whisk and a tin: she says she is baking at the weekend, so it
+        is set out, not finished. */}
+    <ellipse cx={1176} cy={HORIZON - 4} rx={52} ry={12} fill={c.wood} opacity={0.22} />
+    <path d={`M1126 ${HORIZON - 68} h100 l-13 60 a37 16 0 0 1 -74 0 z`} fill={c.pot} />
+    <ellipse cx={1176} cy={HORIZON - 68} rx={50} ry={13} fill="#96a29e" />
+    <ellipse cx={1176} cy={HORIZON - 68} rx={40} ry={9} fill="#e8e2d2" />
+    <line
+      x1={1206} y1={HORIZON - 116} x2={1194} y2={HORIZON - 72}
+      stroke={c.wood} strokeWidth={7} strokeLinecap="round"
     />
-    <ellipse cx={1176} cy={COUNTER_Y - 68} rx={50} ry={13} fill="#96a29e" />
-    <ellipse cx={1176} cy={COUNTER_Y - 68} rx={40} ry={9} fill="#e8e2d2" />
-    <line x1={1206} y1={COUNTER_Y - 116} x2={1194} y2={COUNTER_Y - 72} stroke={c.wood} strokeWidth={7} strokeLinecap="round" />
-    <rect x={1250} y={COUNTER_Y - 44} width={58} height={44} rx={5} fill="#b0b6b2" />
-    <rect x={1258} y={COUNTER_Y - 36} width={42} height={30} rx={3} fill="#d8b47e" />
+    <rect x={1250} y={HORIZON - 44} width={58} height={44} rx={5} fill="#b0b6b2" />
+    <rect x={1258} y={HORIZON - 36} width={42} height={30} rx={3} fill="#d8b47e" />
 
-    {/* a fruit bowl and a mug, because an empty worktop looks like a showroom */}
-    <ellipse cx={1452} cy={COUNTER_Y - 14} rx={44} ry={16} fill="#c8cec6" />
-    {[0, 1, 2, 3].map((i) => (
-      <circle key={i} cx={1428 + i * 16} cy={COUNTER_Y - 24} r={12} fill={P[(i * 3 + 1) % P.length]} />
+    {/* -------------------------------------------------- anchor: fruehstueck */}
+    {/* A board with bread on it and a mug beside it. An empty worktop looks
+        like a showroom, and the morning dialogues need somewhere to point
+        when somebody offers to make you a sandwich. */}
+    <rect x={A.fruehstueck.x} y={HORIZON - 26} width={132} height={14} rx={4} fill={c.wood} />
+    {[0, 1, 2].map((i) => (
+      <ellipse
+        key={i}
+        cx={A.fruehstueck.x + 30 + i * 36}
+        cy={HORIZON - 38}
+        rx={20}
+        ry={13}
+        fill="#d8a45e"
+      />
     ))}
-    <rect x={1546} y={COUNTER_Y - 42} width={36} height={42} rx={5} fill="#e4ded0" />
+    <rect x={A.fruehstueck.x + 6} y={HORIZON - 62} width={44} height={24} rx={4} fill="#efe7d6" />
+    <rect x={A.fruehstueck.x + 150} y={HORIZON - 54} width={38} height={44} rx={5} fill="#e4ded0" />
     <path
-      d={`M1582 ${COUNTER_Y - 32} a13 13 0 0 1 0 22`}
+      d={`M${A.fruehstueck.x + 188} ${HORIZON - 44} a13 13 0 0 1 0 22`}
       fill="none"
       stroke="#e4ded0"
       strokeWidth={7}
     />
+    {[0, 1, 2].map((i) => (
+      <circle key={i} cx={A.fruehstueck.x + 20 + i * 15} cy={HORIZON - 72} r={9} fill={P[(i * 3 + 1) % P.length]} />
+    ))}
   </svg>
 );

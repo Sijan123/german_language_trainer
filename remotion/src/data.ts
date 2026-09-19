@@ -17,12 +17,16 @@
 
 import dialoguesJson from "./data/dialogues.json";
 import wordsJson from "./data/words.json";
+import { SETS, findAnchor } from "./components/sets";
+import { c001 } from "./scenes/c001";
 import { c002 } from "./scenes/c002";
+import { c003 } from "./scenes/c003";
+import { c004 } from "./scenes/c004";
 import type { Dialogue, Line, Scene, Word } from "./types";
 
 type RawWord = { w: string; a: number; b: number; ok: boolean };
 
-const SCENES: Record<string, Scene> = { c002 };
+const SCENES: Record<string, Scene> = { c001, c002, c003, c004 };
 
 const raw = dialoguesJson as unknown as Record<string, Omit<Dialogue, "lines"> & {
   lines: Omit<Line, "words">[];
@@ -77,3 +81,25 @@ export const DIALOGUES: Record<string, Dialogue> = Object.fromEntries(
 export const FILMS = Object.values(DIALOGUES)
   .filter((d) => SCENES[d.id])
   .map((d) => ({ dialogue: d, scene: SCENES[d.id] }));
+
+/*
+ * A callout that names an anchor none of its rooms has used to do nothing at
+ * all - the ring simply never appeared, and you found out by watching fifty
+ * seconds of finished video and noticing an absence. A typo in a scene file
+ * should stop the render instead, with the name of the file that has it.
+ */
+for (const { dialogue, scene } of FILMS) {
+  const rooms = scene.rooms;
+  for (const [index, callout] of Object.entries(scene.callouts)) {
+    if (!findAnchor(rooms, callout.at)) {
+      throw new Error(
+        `scenes/${dialogue.id}.ts line ${index}: no anchor "${callout.at}" in ` +
+        `${rooms.map((r) => r.set).join(" or ")}. Available: ` +
+        rooms.flatMap((r) => Object.keys(SETS[r.set]?.anchors ?? {})).join(", ")
+      );
+    }
+    if (!dialogue.lines[Number(index)]) {
+      throw new Error(`scenes/${dialogue.id}.ts: callout on line ${index}, which does not exist`);
+    }
+  }
+}
