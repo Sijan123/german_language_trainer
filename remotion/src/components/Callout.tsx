@@ -65,6 +65,17 @@ export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
   const tagY = side === "above" ? arrowY - arrowLen - tagH : arrowY + arrowLen;
   const cx = x + w / 2;
 
+  /*
+   * The tag is centred on the ring, but a long word over a box near the edge
+   * of the frame runs off it — "die andere Straßenseite" over the crossing at
+   * the Haltestelle started at x=-92 and lost its first two words. So the tag
+   * slides back inside the frame while the arrow stays on the ring, which is
+   * the thing it has to keep pointing at. The arrow still comes out from
+   * under the tag, because a tag this wide is wider than the slide.
+   */
+  const tagW = label.length * 21 + 44;
+  const tagCx = Math.min(Math.max(cx, tagW / 2 + 24), 1920 - tagW / 2 - 24);
+
   return (
     <g opacity={shown}>
       {/* the ring */}
@@ -132,9 +143,9 @@ export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
         }}
       >
         <rect
-          x={cx - label.length * 10.5 - 22}
+          x={tagCx - tagW / 2}
           y={tagY}
-          width={label.length * 21 + 44}
+          width={tagW}
           height={tagH}
           rx={12}
           fill={theme.color.surface}
@@ -142,7 +153,7 @@ export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
           strokeWidth={3}
         />
         <text
-          x={cx}
+          x={tagCx}
           y={tagY + tagH / 2 + 1}
           fill={theme.color.ink}
           fontFamily={theme.font.body}

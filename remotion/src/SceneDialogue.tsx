@@ -27,11 +27,18 @@ import { SETS, findAnchor } from "./components/sets";
 import { Character } from "./components/Character";
 import { SpeechBubble, BUBBLE_WIDTH } from "./components/SpeechBubble";
 import { Callout } from "./components/Callout";
+import { Thought } from "./components/Thought";
+import type { ThoughtName } from "./components/ThoughtIcons";
 import { TitleCard, WortschatzCard } from "./components/Cards";
 import type { Dialogue, Scene } from "./types";
 
 const W = 1920;
 const H = 1080;
+
+/* Roughly what a callout's arrow plus its tag need above the ring: the ring's
+   padding, the gap, the 62px arrow and the tag itself. Used to decide which
+   side of the box the tag goes on. */
+const CALLOUT_TAG_SPACE = 130;
 
 /* ------------------------------------------------------------------ */
 /* Rooms                                                               */
@@ -169,6 +176,16 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
     ? line.words.find((w) => w.text.replace(/[.,!?;:]/g, "") === callout.word)
     : undefined;
 
+  /* ------------------------------------------------------- the thought */
+  /* Same trigger as a callout, but for something that is not in the room.
+     A line never gets both: the callout wins, because a ring on the real
+     object beats a drawing of it. */
+  const thought = line && !callout ? scene.thoughts?.[line.i] : undefined;
+  const thoughtWord = thought && line
+    ? line.words.find((w) => w.text.replace(/[.,!?;:]/g, "") === thought.word)
+    : undefined;
+  const thinker = thought && line ? scene.cast[line.s] : undefined;
+
   return (
     <AbsoluteFill style={{ background: theme.color.bg, overflow: "hidden" }}>
       {/* --------------------------------------------------------- audio */}
@@ -212,8 +229,30 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
             label={callout.label}
             from={calloutWord.from}
             to={line.endAt}
-            /* keep the tag inside the frame: point down at anything high up */
-            side={box.y < 320 ? "below" : "above"}
+            /*
+             * Which side of the ring the tag sits on.
+             *
+             * It goes above unless there is not enough headroom for the arrow
+             * and the tag, in which case it points down instead. This used to
+             * test `box.y < 320` alone, which reads the top of the box and so
+             * says nothing about how tall it is: the bus at the Haltestelle
+             * starts at y=292 and is 308 high, so it was sent "below" and its
+             * tag landed at y≈700, underneath the speech bubble. Anything
+             * bigger than a kettle hit this.
+             */
+            side={box.y - CALLOUT_TAG_SPACE > 40 ? "above" : "below"}
+          />
+        ) : null}
+
+        {inScene && line && thought && thoughtWord && thinker ? (
+          <Thought
+            icon={thought.icon as ThoughtName}
+            label={thought.label}
+            at={thinker.x}
+            /* the head is a 96px circle centred on headY, scaled by the actor */
+            headTop={thinker.headY - 96 * thinker.scale}
+            from={thoughtWord.from}
+            to={line.endAt}
           />
         ) : null}
       </svg>

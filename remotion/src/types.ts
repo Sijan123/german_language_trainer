@@ -78,8 +78,22 @@ export type Actor = {
   skin: string;
   skinShade: string;
   hair: string;
-  hairStyle: "short" | "bun";
+  /**
+   * "short" is thick and high on top rather than a flat cap; "long" falls
+   * past the shoulders and is centre-parted. "bun" is kept because it is a
+   * real style, but nobody in the current films wears one — both of them are
+   * drawn from photographs and neither has their hair up.
+   */
+  hairStyle: "short" | "bun" | "long";
+  /**
+   * A lighter tone brushed through the hair. Flat hair at this size reads as
+   * a helmet; one highlight is what turns it back into hair. Falls back to
+   * the base colour, which switches the highlight off.
+   */
+  hairLight?: string;
   beard: boolean;
+  /** thick brows are a face's strongest single cue at 720p */
+  brows?: "normal" | "thick";
   top: string;
   topDark: string;
   basket: boolean;
@@ -93,6 +107,26 @@ export type Callout = {
   at: string;
   label: string;
   /** the callout waits for this word in the German before it appears */
+  word: string;
+};
+
+/**
+ * A thing the speaker is talking about that is nowhere near them.
+ *
+ * A callout needs the object to be drawn in the room. When a dialogue is
+ * about somewhere else — an office described from the sofa at the end of the
+ * day — there is nothing to ring, and c005 had one pointer in thirteen lines
+ * because of it. A thought draws the thing in a cloud over the speaker's head
+ * instead, so the vocabulary still gets a picture.
+ *
+ * `icon` is a key of ICONS in components/ThoughtIcons.tsx. Adding a thought
+ * for a thing with no icon means drawing one; that is the cost here, the way
+ * a new room is the cost of a callout in a new place.
+ */
+export type Thought = {
+  icon: string;
+  label: string;
+  /** waits for this word in the German, exactly like a callout */
   word: string;
 };
 
@@ -115,5 +149,11 @@ export type Scene = {
    * cannot point at a box that has moved out from under it.
    */
   callouts: Record<number, Callout>;
+  /**
+   * Keyed by line index, like callouts, and mutually exclusive with them: a
+   * line that rings something in the room does not also imagine it. The
+   * composition renders at most one pointer per line.
+   */
+  thoughts?: Record<number, Thought>;
   wortschatz: { de: string; en: string }[];
 };

@@ -17,6 +17,9 @@ import { Kueche, kuecheAnchors, kuecheKeywords } from "./Kueche";
 import { Wohnzimmer, wohnzimmerAnchors, wohnzimmerKeywords } from "./Wohnzimmer";
 import { Schlafzimmer, schlafzimmerAnchors, schlafzimmerKeywords } from "./Schlafzimmer";
 import { Restaurant, restaurantAnchors, restaurantKeywords } from "./Restaurant";
+import { Bushaltestelle, bushaltestelleAnchors, bushaltestelleKeywords } from "./Bushaltestelle";
+import { Bahnhof, bahnhofAnchors, bahnhofKeywords } from "./Bahnhof";
+import { Buergerbuero, buergerbueroAnchors, buergerbueroKeywords } from "./Buergerbuero";
 
 export type SetDef = {
   Component: React.FC;
@@ -82,6 +85,30 @@ export const SETS: Record<string, SetDef> = {
     width: 960,
     anchors: wohnzimmerAnchors,
     keywords: wohnzimmerKeywords
+  },
+  bushaltestelle: {
+    Component: Bushaltestelle,
+    label: "Haltestelle",
+    origin: 0,
+    width: 1920,
+    anchors: bushaltestelleAnchors,
+    keywords: bushaltestelleKeywords
+  },
+  bahnhof: {
+    Component: Bahnhof,
+    label: "Bahnhof",
+    origin: 0,
+    width: 1920,
+    anchors: bahnhofAnchors,
+    keywords: bahnhofKeywords
+  },
+  buergerbuero: {
+    Component: Buergerbuero,
+    label: "Bürgerbüro",
+    origin: 0,
+    width: 1920,
+    anchors: buergerbueroAnchors,
+    keywords: buergerbueroKeywords
   }
 };
 
@@ -102,6 +129,16 @@ export const TOPIC_ROOMS: Record<string, string[]> = {
   essen: ["restaurant"],
   alltag: ["schlafzimmer", "kueche"],
   wohnen: ["wohnzimmer", "kueche"],
+  /* Three topics where the two speakers are strangers or fellow travellers
+     standing in one place, so each names a single full-frame set. */
+  unterwegs: ["bushaltestelle"],
+  reisen: ["bahnhof"],
+  amt: ["buergerbuero"],
+  /* Both of these are couples at home talking *about* somewhere else — an
+     office, a surgery — so they get rooms of a flat, not the place they are
+     discussing. The bedroom is the only home set drawn for the left half. */
+  arbeit: ["schlafzimmer", "wohnzimmer"],
+  gesundheit: ["schlafzimmer", "kueche"],
   paar: ["wohnzimmer", "kueche"],
   familie: ["wohnzimmer", "kueche"],
   freizeit: ["wohnzimmer", "kueche"],

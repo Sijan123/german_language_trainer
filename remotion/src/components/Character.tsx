@@ -74,6 +74,8 @@ export const Character: React.FC<Props> = ({
   const brow = asking && active ? -8 : 0;
 
   const clip = "head-" + id;
+  /* How much heavier a "thick" brow is than the default one. */
+  const browGrow = actor.brows === "thick" ? 5 : 0;
   const mouthW = shape === 1 ? 18 : shape === 2 ? 22 : 25;
   const mouthH = shape === 1 ? 8 : shape === 2 ? 15 : 20;
 
@@ -147,6 +149,62 @@ export const Character: React.FC<Props> = ({
         </>
       ) : null}
 
+      {actor.hairStyle === "long" ? (
+        <>
+          {/*
+           * Long and loose, falling over the shoulders rather than behind
+           * them — drawn after the body for exactly that reason. The two
+           * falls are separate from the crown so they can taper and swing
+           * out a little at the bottom; one ellipse stretched to the
+           * shoulders just reads as a cape.
+           */}
+          <ellipse cx={0} cy={R * 0.08} rx={R * 1.28} ry={R * 1.17} fill={actor.hair} />
+          {[-1, 1].map((s) => (
+            <path
+              key={s}
+              d={
+                `M${s * R * 1.26} ${-R * 0.12} ` +
+                `C${s * R * 1.46} ${R * 1.3}, ${s * R * 1.34} ${R * 2.3}, ${s * R * 1.08} ${R * 3.05} ` +
+                `L${s * R * 0.42} ${R * 2.92} ` +
+                `C${s * R * 0.58} ${R * 2.0}, ${s * R * 0.64} ${R * 1.0}, ${s * R * 0.6} ${R * 0.1} Z`
+              }
+              fill={actor.hair}
+            />
+          ))}
+          {/* a sunlit streak down the near fall */}
+          {[-1, 1].map((s) => (
+            <path
+              key={`hl${s}`}
+              d={
+                `M${s * R * 1.1} ${R * 0.3} ` +
+                `C${s * R * 1.2} ${R * 1.3}, ${s * R * 1.12} ${R * 2.1}, ${s * R * 0.95} ${R * 2.7} ` +
+                `L${s * R * 0.78} ${R * 2.64} ` +
+                `C${s * R * 0.94} ${R * 2.0}, ${s * R * 1.0} ${R * 1.2}, ${s * R * 0.92} ${R * 0.34} Z`
+              }
+              fill={actor.hairLight || actor.hair}
+              opacity={0.55}
+            />
+          ))}
+        </>
+      ) : null}
+
+      {actor.hairStyle === "short" ? (
+        /*
+         * Thick, high and a little uneven, not a cap clipped to the skull.
+         * Overlapping circles rather than one dome because the silhouette
+         * has to break up: a smooth arc over the head reads as a swimming
+         * cap, which is what the first pass looked like next to the photo.
+         */
+        <g fill={actor.hair}>
+          <circle cx={-R * 0.52} cy={-R * 0.68} r={R * 0.46} />
+          <circle cx={-R * 0.14} cy={-R * 0.92} r={R * 0.48} />
+          <circle cx={R * 0.3} cy={-R * 0.84} r={R * 0.44} />
+          <circle cx={R * 0.66} cy={-R * 0.54} r={R * 0.4} />
+          <circle cx={-R * 0.86} cy={-R * 0.26} r={R * 0.36} />
+          <circle cx={R * 0.88} cy={-R * 0.22} r={R * 0.34} />
+        </g>
+      ) : null}
+
       {/* --------------------------------------------------------- the head */}
       <ellipse cx={-R + 3} cy={5} rx={16} ry={22} fill={actor.skin} />
       <ellipse cx={R - 3} cy={5} rx={16} ry={22} fill={actor.skin} />
@@ -162,15 +220,73 @@ export const Character: React.FC<Props> = ({
         <circle cx={0} cy={0} r={R} fill={actor.hair} />
         <circle
           cx={0}
-          cy={actor.hairStyle === "bun" ? R * 0.26 : R * 0.2}
+          cy={actor.hairStyle === "short" ? R * 0.2 : R * 0.28}
           r={R * 0.96}
           fill={actor.skin}
         />
-        {/* the beard sits on the jaw, below the nose */}
+        {/* Centre parting: two wedges down the temples, which is what long
+            hair does either side of a forehead. Without them the hairline is
+            a clean arc and the face reads as balding rather than parted. */}
+        {actor.hairStyle === "long" ? (
+          /* Narrow, and only at the temples. A wider pair met in the middle
+             and a highlight laid over them finished the job: the forehead
+             came out with a dark band across it like a headband. */
+          <>
+            {[-1, 1].map((s) => (
+              <path
+                key={s}
+                d={
+                  `M${s * R * 0.46} ${-R * 0.88} ` +
+                  `C${s * R * 0.74} ${-R * 0.7}, ${s * R * 0.92} ${-R * 0.38}, ${s * R * 1.0} ${R * 0.16} ` +
+                  `L${s * R * 1.0} ${-R * 0.76} Z`
+                }
+                fill={actor.hair}
+              />
+            ))}
+          </>
+        ) : null}
+        {/*
+         * The beard. One ellipse on the jaw for the mass, then a moustache
+         * bridging to it — a beard without the bridge reads as a chinstrap,
+         * and in the photograph the two are one piece.
+         */}
         {actor.beard ? (
-          <ellipse cx={0} cy={R * 0.96} rx={R * 0.9} ry={R * 0.8} fill={actor.hair} />
+          <>
+            {/*
+             * The top edge of this ellipse is the moustache line, so it is
+             * set to y≈29 — the tip of the nose, which runs from y=6 to y=29.
+             * Any higher and the nose sits inside the beard and reads as a
+             * dark blob in the middle of the face; there is no separate
+             * moustache shape because at this size the mass is the moustache.
+             */}
+            <ellipse cx={0} cy={R * 1.06} rx={R * 0.95} ry={R * 0.76} fill={actor.hair} />
+            {/* sideburns bridging hair to jaw, so the beard is not a floating
+                shape hung under the face */}
+            {[-1, 1].map((s) => (
+              <rect
+                key={s}
+                x={s > 0 ? R * 0.72 : -R * 0.94}
+                y={-R * 0.12}
+                width={R * 0.22}
+                height={R * 0.9}
+                fill={actor.hair}
+              />
+            ))}
+          </>
         ) : null}
       </g>
+
+      {/*
+       * The chin, just past the jawline. Inside the clip it would be cut off
+       * flat at the bottom of the head circle, which is not what a beard
+       * does — but it only wants to clear the jaw by a few pixels. At
+       * cy=R*0.97, ry=R*0.3 it reached y=122 against a jaw at y=96, hanging
+       * a full 26px below the face and reading as a long beard rather than a
+       * trimmed one. Now it clears the jaw by about ten.
+       */}
+      {actor.beard ? (
+        <ellipse cx={0} cy={R * 0.88} rx={R * 0.52} ry={R * 0.21} fill={actor.hair} />
+      ) : null}
 
       {/* cheeks */}
       <ellipse cx={-55} cy={30} rx={21} ry={12} fill="#e08f80" opacity={0.38} />
@@ -178,11 +294,13 @@ export const Character: React.FC<Props> = ({
 
       {/* brows */}
       <rect
-        x={-52} y={-40 + brow} width={38} height={10} rx={5} fill={actor.hair}
+        x={-52 - browGrow / 2} y={-40 + brow - browGrow / 2} width={38 + browGrow} height={10 + browGrow} rx={5 + browGrow / 2}
+        fill={actor.hair}
         transform={`rotate(${-4 + (asking && active ? -6 : 0)}, -33, -36)`}
       />
       <rect
-        x={14} y={-40 + brow} width={38} height={10} rx={5} fill={actor.hair}
+        x={14 - browGrow / 2} y={-40 + brow - browGrow / 2} width={38 + browGrow} height={10 + browGrow} rx={5 + browGrow / 2}
+        fill={actor.hair}
         transform={`rotate(${4 + (asking && active ? 6 : 0)}, 33, -36)`}
       />
 
@@ -203,6 +321,11 @@ export const Character: React.FC<Props> = ({
         strokeWidth={4.4}
         strokeLinecap="round"
       />
+
+      {/* No separate moustache shape. The beard mass already reaches above the
+          mouth, so a drawn moustache on top of it only ever landed on the
+          nose — and the nose is drawn last, so it came out as a dark bar
+          across the middle of the face. */}
 
       {/* --------------------------------------------------------- the mouth */}
       {shape === 0 ? (

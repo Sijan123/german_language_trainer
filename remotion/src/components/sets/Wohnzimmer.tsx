@@ -18,13 +18,22 @@ import type { Anchor } from "../../types";
 
 const c = theme.set.living;
 
-/** Everything on this set a callout can point at. */
+/**
+ * Everything on this set a callout can point at.
+ *
+ * All of it lives left of x=1520, because the figure in this room stands at
+ * x≈1664 and occupies roughly 1530–1800 for the whole film. The first cut of
+ * this room had the window and the radiator stacked at x=1660 — dead centre
+ * of the person — and c004 rendered with "die Heizung" ringing Sijan's face
+ * instead of the radiator behind it. The room was drawn before anything was
+ * ever filmed in it, which is how that survived review.
+ */
 export const wohnzimmerAnchors: Record<string, Anchor> = {
-  sofa: { x: 1030, y: 452, w: 330, h: 196 },
-  regal: { x: 1404, y: 268, w: 214, h: 232 },
-  fenster: { x: 1660, y: 180, w: 226, h: 250 },
-  heizung: { x: 1660, y: 470, w: 226, h: 116 },
-  tisch: { x: 1108, y: 596, w: 190, h: 52 }
+  sofa: { x: 1205, y: 452, w: 300, h: 196 },
+  regal: { x: 1265, y: 200, w: 214, h: 232 },
+  fenster: { x: 985, y: 165, w: 226, h: 250 },
+  heizung: { x: 975, y: 470, w: 200, h: 116 },
+  tisch: { x: 1240, y: 596, w: 190, h: 52 }
 };
 
 /** Which German words should send a callout here. See Supermarkt for why. */
@@ -51,8 +60,11 @@ export const Wohnzimmer: React.FC = () => (
     {/* skirting, which is most of what says "this is a home and not an office" */}
     <rect x={960} y={HORIZON - 16} width={960} height={16} fill={c.skirting} />
 
-    <Picture x={1046} y={228} w={150} h={116} tint={c.art} />
-    <Picture x={1218} y={252} w={110} h={92} tint={c.artAlt} />
+    {/* The pictures are the one thing that may hang on the wall the figure
+        stands against — they are decoration, never a callout target, and at
+        this height they clear the top of a head (y≈400) with room to spare. */}
+    <Picture x={1600} y={150} w={150} h={116} tint={c.art} />
+    <Picture x={1772} y={174} w={110} h={92} tint={c.artAlt} />
 
     {/* -------------------------------------------------------- anchor: regal */}
     <rect x={A.regal.x} y={A.regal.y} width={A.regal.w} height={A.regal.h} fill={c.wood} />
@@ -90,7 +102,9 @@ export const Wohnzimmer: React.FC = () => (
     {/* A radiator under the window — where it is in every German flat, and the
         thing "Die Heizung wird nicht warm" is about. */}
     <rect x={A.heizung.x} y={A.heizung.y} width={A.heizung.w} height={A.heizung.h} rx={6} fill={c.radiator} />
-    {Array.from({ length: 9 }, (_, i) => (
+    {/* seven segments, not nine: they are spaced 24 apart and the radiator is
+        now 200 wide, so a ninth would hang off the right-hand end of it */}
+    {Array.from({ length: 7 }, (_, i) => (
       <rect
         key={i}
         x={A.heizung.x + 10 + i * 24}

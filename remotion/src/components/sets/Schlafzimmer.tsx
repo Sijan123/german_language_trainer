@@ -25,14 +25,22 @@ const c = theme.set.bedroom;
 export const schlafzimmerAnchors: Record<string, Anchor> = {
   bett: { x: 418, y: 404, w: 404, h: 244 },
   wecker: { x: 850, y: 440, w: 84, h: 62 },
-  fenster: { x: 500, y: 150, w: 244, h: 214 }
+  fenster: { x: 500, y: 150, w: 244, h: 214 },
+  /*
+   * A coat on a hook, on the only clear piece of wall this room has left:
+   * right of the window (ends x=744), above the nightstand (starts y=506),
+   * and well clear of the figure standing at x≈258. c006 spends a line on
+   * "Die liegt in meiner Jacke" and had nothing to point at.
+   */
+  jacke: { x: 782, y: 176, w: 150, h: 226 }
 };
 
 /** Which German words should send a callout here. See Supermarkt for why. */
 export const schlafzimmerKeywords: Record<string, string[]> = {
   wecker: ["wecker", "akku", "handy", "uhr", "klingeln", "geklingelt", "gestellt", "batterie", "alarm"],
   bett: ["bett", "schlafen", "geschlafen", "müde", "aufstehen", "decke", "kissen", "traum"],
-  fenster: ["fenster", "draußen", "wetter", "regnet", "sonne", "morgen", "dunkel", "hell"]
+  fenster: ["fenster", "draußen", "wetter", "regnet", "sonne", "morgen", "dunkel", "hell"],
+  jacke: ["jacke", "mantel", "tasche", "anziehen", "hose", "kleidung", "schal"]
 };
 
 const A = schlafzimmerAnchors;
@@ -55,6 +63,38 @@ export const Schlafzimmer: React.FC = () => (
     <rect x={88} y={188} width={96} height={HORIZON - 200} rx={4} fill={c.wardrobeDark} opacity={0.4} />
     <rect x={72} y={380} width={10} height={54} rx={5} fill={c.woodDark} />
     <rect x={92} y={380} width={10} height={54} rx={5} fill={c.woodDark} />
+
+    {/* -------------------------------------------------------- anchor: jacke */}
+    {/* A rail with a coat on it. The rail is what stops the coat reading as a
+        rug hung on the wall; the collar notch is what stops it reading as a
+        dress. */}
+    <rect x={A.jacke.x - 14} y={A.jacke.y} width={A.jacke.w + 28} height={11} rx={5} fill={c.woodDark} />
+    {[0, 1].map((i) => (
+      <circle key={i} cx={A.jacke.x + 30 + i * 90} cy={A.jacke.y + 18} r={8} fill={c.wardrobeDark} />
+    ))}
+    <path
+      d={
+        `M${A.jacke.x + 44} ${A.jacke.y + 26} ` +
+        `q31 -18 62 0 ` +
+        `l26 34 l-20 20 l-10 -12 ` +
+        `l0 ${A.jacke.h - 108} ` +
+        `q-37 14 -74 0 ` +
+        `l0 -${A.jacke.h - 108} ` +
+        `l-10 12 l-20 -20 z`
+      }
+      fill={c.jacket}
+    />
+    <path
+      d={`M${A.jacke.x + 75} ${A.jacke.y + 30} l0 ${A.jacke.h - 80}`}
+      stroke={c.jacketDark}
+      strokeWidth={5}
+      fill="none"
+    />
+    {/* a scarf over the second hook, so the wall is not one object alone */}
+    <path
+      d={`M${A.jacke.x + 122} ${A.jacke.y + 24} q16 44 4 92 q-14 -8 -22 0 q10 -50 -4 -92 z`}
+      fill={c.scarf}
+    />
 
     {/* ------------------------------------------------------ anchor: fenster */}
     <Window x={A.fenster.x} y={A.fenster.y} w={A.fenster.w} h={A.fenster.h} palette={c} frame={c.frame} />

@@ -22,11 +22,17 @@ import { c001 } from "./scenes/c001";
 import { c002 } from "./scenes/c002";
 import { c003 } from "./scenes/c003";
 import { c004 } from "./scenes/c004";
+import { c005 } from "./scenes/c005";
+import { c006 } from "./scenes/c006";
+import { c007 } from "./scenes/c007";
+import { c008 } from "./scenes/c008";
+import { c009 } from "./scenes/c009";
+import { c010 } from "./scenes/c010";
 import type { Dialogue, Line, Scene, Word } from "./types";
 
 type RawWord = { w: string; a: number; b: number; ok: boolean };
 
-const SCENES: Record<string, Scene> = { c001, c002, c003, c004 };
+const SCENES: Record<string, Scene> = { c001, c002, c003, c004, c005, c006, c007, c008, c009, c010 };
 
 const raw = dialoguesJson as unknown as Record<string, Omit<Dialogue, "lines"> & {
   lines: Omit<Line, "words">[];

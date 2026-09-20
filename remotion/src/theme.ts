@@ -118,7 +118,10 @@ export const theme = {
       lamp: "#d9b96a",
       sky: "#b9c8dc",
       skyLow: "#d6dee9",
-      frame: "#b0a894"
+      frame: "#b0a894",
+      jacket: "#5c6f86",
+      jacketDark: "#4a5b70",
+      scarf: "#b07a63"
     },
     restaurant: {
       wall: "#e7ded2",
@@ -157,7 +160,84 @@ export const theme = {
     products: [
       "#e08272", "#eab85f", "#7fabc6", "#9ec081", "#c68cb2",
       "#5f9cb4", "#e2c06a", "#ab85c6", "#78bd9c", "#dd8b82"
-    ]
+    ],
+
+    /*
+     * The three outdoor-ish sets below are the first that are not a room, so
+     * "wall" is the sky and "floor" is pavement or platform. Keeping the same
+     * key names means Wall and Floor from the kit still draw them, and the
+     * horizon stays at y=648 like everywhere else.
+     */
+    strasse: {
+      wall: "#cfe0ea",
+      wallDark: "#bcd3e1",
+      floor: "#c4c3bd",
+      floorLine: "#b2b1ab",
+      kerb: "#d6d5cf",
+      road: "#8e8d89",
+      roadLine: "#e8e6dd",
+      haus: "#d3c8b8",
+      hausDark: "#c0b4a2",
+      dach: "#9a8573",
+      shelter: "#8fa3ae",
+      shelterDark: "#768994",
+      glass: "#dbe9f0",
+      bus: "#c8523f",
+      busDark: "#a8422f",
+      busGlass: "#cfe2ec",
+      sign: "#2b3440",
+      signInk: "#ffffff",
+      chrome: "#a9b0b6",
+      plan: "#f4f1e8",
+      planInk: "#6a6459",
+      automat: "#5d6b6f",
+      automatDark: "#4a565a"
+    },
+    bahnhof: {
+      wall: "#d8dde1",
+      wallDark: "#c6ccd2",
+      floor: "#b8b6ae",
+      floorLine: "#a6a49c",
+      kante: "#d9d6cb",
+      kanteWarn: "#d8b45e",
+      zug: "#b24a4a",
+      zugDark: "#953c3c",
+      zugGlass: "#cfe0ea",
+      zugRoof: "#8f9399",
+      tafel: "#232a33",
+      tafelInk: "#e6c15f",
+      pfosten: "#8d949a",
+      sign: "#1f5aa8",
+      signInk: "#ffffff",
+      chrome: "#aab1b7",
+      stahl: "#9aa2a8",
+      stahlDark: "#828a90",
+      bank: "#b2894f",
+      bankDark: "#946f3d",
+      rucksack: "#4f7a6a",
+      rucksackDark: "#3f6455"
+    },
+    amt: {
+      wall: "#e4e6e3",
+      wallDark: "#d6d9d5",
+      floor: "#cfcdc6",
+      floorLine: "#bfbdb6",
+      tresen: "#b6b2a6",
+      tresenTop: "#8d9289",
+      tresenDark: "#9d998d",
+      glas: "#dbe7ea",
+      anzeige: "#26303a",
+      anzeigeInk: "#7fd4a0",
+      papier: "#f7f5ee",
+      papierInk: "#8a8478",
+      pass: "#7a3f4a",
+      passInk: "#e0c98a",
+      stuhl: "#6f8496",
+      stuhlDark: "#5c7080",
+      pflanze: "#7faa78",
+      rahmen: "#b0aa9a",
+      chrome: "#a8aeb2"
+    }
   },
 
   font: {
