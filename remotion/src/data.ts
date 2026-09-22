@@ -28,11 +28,21 @@ import { c007 } from "./scenes/c007";
 import { c008 } from "./scenes/c008";
 import { c009 } from "./scenes/c009";
 import { c010 } from "./scenes/c010";
+import { c011 } from "./scenes/c011";
+import { c012 } from "./scenes/c012";
+import { c013 } from "./scenes/c013";
+import { c014 } from "./scenes/c014";
+import { c015 } from "./scenes/c015";
+import { c016 } from "./scenes/c016";
+import { c017 } from "./scenes/c017";
+import { c018 } from "./scenes/c018";
+import { c019 } from "./scenes/c019";
+import { c020 } from "./scenes/c020";
 import type { Dialogue, Line, Scene, Word } from "./types";
 
 type RawWord = { w: string; a: number; b: number; ok: boolean };
 
-const SCENES: Record<string, Scene> = { c001, c002, c003, c004, c005, c006, c007, c008, c009, c010 };
+const SCENES: Record<string, Scene> = { c001, c002, c003, c004, c005, c006, c007, c008, c009, c010, c011, c012, c013, c014, c015, c016, c017, c018, c019, c020 };
 
 const raw = dialoguesJson as unknown as Record<string, Omit<Dialogue, "lines"> & {
   lines: Omit<Line, "words">[];

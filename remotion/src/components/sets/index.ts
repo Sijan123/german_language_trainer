@@ -20,6 +20,11 @@ import { Restaurant, restaurantAnchors, restaurantKeywords } from "./Restaurant"
 import { Bushaltestelle, bushaltestelleAnchors, bushaltestelleKeywords } from "./Bushaltestelle";
 import { Bahnhof, bahnhofAnchors, bahnhofKeywords } from "./Bahnhof";
 import { Buergerbuero, buergerbueroAnchors, buergerbueroKeywords } from "./Buergerbuero";
+import { Bad, badAnchors, badKeywords } from "./Bad";
+import { KuecheGross, kuecheGrossAnchors, kuecheGrossKeywords } from "./KuecheGross";
+import { Baeckerei, baeckereiAnchors, baeckereiKeywords } from "./Baeckerei";
+import { Markt, marktAnchors, marktKeywords } from "./Markt";
+import { Bekleidung, bekleidungAnchors, bekleidungKeywords } from "./Bekleidung";
 
 export type SetDef = {
   Component: React.FC;
@@ -109,6 +114,49 @@ export const SETS: Record<string, SetDef> = {
     width: 1920,
     anchors: buergerbueroAnchors,
     keywords: buergerbueroKeywords
+  },
+  /* Only the third left-half set. Before it, every two-room film set at home
+     had to use the bedroom, because the kitchen and living room are both
+     drawn for the right. */
+  bad: {
+    Component: Bad,
+    label: "Bad",
+    origin: 0,
+    width: 960,
+    anchors: badAnchors,
+    keywords: badKeywords
+  },
+  kuecheGross: {
+    Component: KuecheGross,
+    label: "Küche",
+    origin: 0,
+    width: 1920,
+    anchors: kuecheGrossAnchors,
+    keywords: kuecheGrossKeywords
+  },
+  baeckerei: {
+    Component: Baeckerei,
+    label: "Bäckerei",
+    origin: 0,
+    width: 1920,
+    anchors: baeckereiAnchors,
+    keywords: baeckereiKeywords
+  },
+  markt: {
+    Component: Markt,
+    label: "Markt",
+    origin: 0,
+    width: 1920,
+    anchors: marktAnchors,
+    keywords: marktKeywords
+  },
+  bekleidung: {
+    Component: Bekleidung,
+    label: "Bekleidung",
+    origin: 0,
+    width: 1920,
+    anchors: bekleidungAnchors,
+    keywords: bekleidungKeywords
   }
 };
 

@@ -130,6 +130,62 @@ export type Thought = {
   word: string;
 };
 
+/**
+ * One camera setup, held for as long as no later line names another.
+ *
+ * The default composition is a locked-off two-shot: both rooms, whole frame,
+ * for fifty seconds. That is readable and it is not filmed. A scene that
+ * carries a `film` block is instead cut like coverage — the camera sits on
+ * whoever is talking, or on the thing being talked about, and moves the whole
+ * time it is there.
+ *
+ * The window is described in the set's own full-frame coordinates, so a shot
+ * is written by reading the numbers off the room rather than by guessing a
+ * zoom factor: `{ x: 1440, y: 500, w: 900 }` is "the right-hand room, chest
+ * up". `w` is what decides the scale; `H` follows from the 16:9 frame.
+ */
+export type Shot = {
+  /** centre of the visible window, full-frame coordinates */
+  x: number;
+  y: number;
+  /** width of the visible window; 1920 is the whole frame */
+  w: number;
+  /**
+   * What the camera does while it is here. Every shot moves: a still frame
+   * held for four seconds is the thing that reads as a slideshow.
+   *
+   * "push" and "pull" change `w` by 4% across the shot; "left" and "right"
+   * track `x` by 3% of the window. "hold" still gets the handheld float.
+   */
+  move?: "push" | "pull" | "left" | "right" | "hold";
+  /**
+   * False glides to this framing from the previous one instead of cutting.
+   * Use it when the camera is following something rather than changing angle;
+   * a glide between two people reads as a mistake, not an edit.
+   */
+  cut?: boolean;
+  /** the chip in the corner. null while the camera is inside one room. */
+  label?: string | null;
+};
+
+export type Film = {
+  /**
+   * Keyed by line index, like callouts. A line with no shot holds whatever
+   * the last one set, so a two-shot that covers four lines is written once.
+   */
+  shots: Record<number, Shot>;
+  /** what the title card plays over, before the first line opens */
+  open?: Shot;
+  /**
+   * How far the background falls out of focus when the camera is close, in
+   * pixels of blur at the tightest shot in the film. The people are drawn in
+   * a separate layer and stay sharp, which is the whole point — it is what
+   * separates a subject from a backdrop and it is why this looks lensed
+   * rather than zoomed. 0 switches it off.
+   */
+  focus?: number;
+};
+
 export type Scene = {
   id: string;
   /**
@@ -155,5 +211,11 @@ export type Scene = {
    * composition renders at most one pointer per line.
    */
   thoughts?: Record<number, Thought>;
+  /**
+   * Shot the film instead of locking off on a two-shot. Absent on almost
+   * every scene, and absent means the composition behaves exactly as it did
+   * before this existed — the camera path collapses to the identity.
+   */
+  film?: Film;
   wortschatz: { de: string; en: string }[];
 };

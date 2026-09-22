@@ -135,6 +135,54 @@ names an anchor none of its rooms has.
 
 ---
 
+## 4b. Callouts and thoughts
+
+Two ways to illustrate a word, and which one you get is decided by whether
+the thing is in the room.
+
+| | rings | use when |
+|---|---|---|
+| **callout** | an `anchor` on a set | the object is drawn in the room |
+| **thought** | nothing — it draws the object in a cloud | the object is somewhere else entirely |
+
+Both hang off the same trigger: a `word` in the line, found by the aligner, so
+they land on the syllable. Both live in `src/scenes/<id>.ts` keyed by line
+index. A line never gets both — the composition drops the thought if that line
+also has a callout, because a ring on the real object beats a drawing of it.
+
+**A thought is not a fallback for a lazy callout.** It exists for dialogues
+that are *about* somewhere else. c005 is the case it was built for: "Der erste
+Tag im Büro" is the evening after the first day, so the desk, the boss, the
+canteen and tomorrow's bus are all named and none of them is within a
+kilometre of the flat. Before thoughts that film ran thirteen lines on one
+pointer — the alarm clock, in the last line.
+
+```ts
+thoughts: {
+  6: { icon: "schreibtisch", label: "der Schreibtisch", word: "Schreibtisch" }
+}
+```
+
+`icon` is a key of `ICONS` in `components/ThoughtIcons.tsx`. Six exist:
+`schreibtisch` `chef` `kantine` `bus` `besprechung` `gebaeude`. **Naming an
+icon that does not exist draws nothing** — there is no throw, unlike a callout
+naming a missing anchor, so check the bubble actually has something in it.
+
+Drawing a new icon is the cost here, the way a new room is the cost of a
+callout somewhere new — but it is a much smaller cost: an icon is a flat
+drawing in a 150x120 box with no anchors, no keywords and no registry beyond
+one line in `ICONS`. Keep them plain. The bubble is 330px wide in a 1920 frame
+and the ship is 720p, so anything needing a thin line to be recognisable is
+the wrong drawing.
+
+The cloud hangs beside the speaker's head, inboard towards the middle of the
+frame, and is clamped so it cannot leave the frame. The trailing dots run
+**diagonally** from beside the temple, not straight up: the cloud's underside
+sits about level with the top of the head, so a vertical run had twelve pixels
+to work with and put all three dots inside the bubble's bottom lobe.
+
+---
+
 ## 5. The sets
 
 A set is one file holding three things: the drawing, the boxes a callout can
@@ -149,6 +197,30 @@ time a room moved its callouts stayed behind.
 | `kueche` | right half | `vorrat` `kuchen` `fruehstueck` `fenster` |
 | `wohnzimmer` | right half | `sofa` `regal` `fenster` `heizung` `tisch` |
 | `restaurant` | **full frame** | `tisch` `speisekarte` `essen` `getraenk` `fenster` |
+| `bushaltestelle` | **full frame** | `bus` `haltestelle` `fahrplan` `automat` `strasse` |
+| `bahnhof` | **full frame** | `zug` `anzeigetafel` `gleis` `treppe` `rucksack` |
+| `buergerbuero` | **full frame** | `tresen` `ausweis` `formular` `nummer` `wartebereich` |
+| `bad` | **left half** | `waschmaschine` `waesche` `spiegel` `fenster` |
+| `kuecheGross` | **full frame** | `topf` `brett` `vorrat` `tisch` `fenster` |
+| `baeckerei` | **full frame** | `brot` `broetchen` `kuchen` `kasse` `theke` |
+| `markt` | **full frame** | `erdbeeren` `kartoffeln` `kaesestand` `preis` `stand` |
+| `bekleidung` | **full frame** | `hose` `kassenbon` `jacken` `kabine` `theke` |
+
+`bad` is only the **third left-half set**. Until it existed every two-room
+film set at home had to use the bedroom, because the kitchen and the living
+room are both drawn for the right — which is why c001, c005, c006 and c009 all
+open on a bed. If you draw one more room, make it a left-hand one.
+
+`kuecheGross` is the same kitchen as `kueche`, in the same palette, drawn full
+frame. Use the half-frame one when a person in the kitchen is talking to
+someone who is not, and the full-frame one when both are cooking.
+
+The last three are outdoors or public rather than rooms of a flat, so their
+palettes call the sky `wall` and the pavement `floor` — that way `Wall` and
+`Floor` from the kit still draw them and the horizon stays at y=648.
+
+In a full-frame set the figures stand at **x≈420 and x≈1500**, not 258/1664,
+so the bands to keep clear are x 285-555 and 1365-1635.
 
 ### Adding a room
 
@@ -184,22 +256,56 @@ something wrong first:
 
 ## 6. Current state
 
-3 of 20 dialogues have films. 8.4 MB in `video/` total.
+20 of 108 dialogues have films, and **all 108 now have audio** (1352 MP3
+clips, 22.5 MB). 57 MB in `video/` total.
 
 | id | topic | title | |
 |---|---|---|---|
-| c001 | alltag | Der Wecker hat nicht geklingelt | ✅ 49s |
-| c002 | einkaufen | Im Supermarkt fehlt die Hälfte | ✅ 54s |
-| c003 | essen | Ein Tisch für zwei | ✅ 53s |
-| c004, c020 | wohnen | | rooms exist |
-| c011–c013 | alltag | | rooms exist |
-| c014–c016 | einkaufen | | rooms exist |
-| c017–c019 | essen | | rooms exist |
-| c005 | arbeit | Der erste Tag im Büro | **needs a room** |
-| c006 | gesundheit | Beim Arzt anrufen | **needs a room** |
-| c007 | unterwegs | Welcher Bus fährt zum Bahnhof? | **needs a room** |
-| c008 | reisen | Der Zug hat Verspätung | **needs a room** |
-| c010 | amt | Anmeldung beim Bürgerbüro | **needs a room** |
+| c001-c010 | various | see git history | ✅ |
+| c011 | alltag | Die Waschmaschine ist voll | ✅ |
+| c012 | alltag | Wer bringt den Müll raus? | ✅ |
+| c013 | alltag | Der Schlüssel ist weg | ✅ |
+| c014 | einkaufen | Die Hose ist zu eng | ✅ |
+| c015 | einkaufen | Samstag auf dem Markt | ✅ |
+| c016 | einkaufen | Das Paket ist nicht angekommen | ✅ |
+| c017 | essen | Zusammen kochen | ✅ |
+| c018 | essen | Beim Bäcker | ✅ |
+| c019 | essen | Gäste kommen zum Essen | ✅ |
+| c020 | wohnen | Eine Wohnung besichtigen | ✅ |
+| c021-c108 | various | 88 left | no scene yet |
+
+Of the 88 remaining, 16 are topics with no room mapping at all (`lernen`,
+`technik`). The other 72 map to a topic that has rooms — but read §6 below
+before trusting that.
+
+**The topic mapping is a blunt instrument and it gets worse the further you
+go.** Of c011-c020, scaffolded straight from `TOPIC_ROOMS`, **six of ten were
+in the wrong place**:
+
+| id | proposed | actually |
+|---|---|---|
+| c011 | living room | a bathroom — it is about a washing machine |
+| c014 | supermarket | a clothes shop — a food shop has no fitting rooms |
+| c015 | supermarket + kitchen | a market, and the whole point is that it is not a supermarket |
+| c016 | supermarket + kitchen | at home; **the scaffolder reported 0 of 12 callouts** |
+| c017 | restaurant | their own kitchen — they are cooking, not eating out |
+| c018 | restaurant | a bakery — you sit down in one and queue in the other |
+
+**`0 of N` is the strongest signal this project produces.** It does not mean
+the dialogue has nothing to illustrate; it means the dialogue has been put
+somewhere that has nothing to do with it. c016 went on to get four pointers
+once it was staged at home with thought bubbles.
+
+**"Needs a room" is a claim about the topic, not about the dialogue.** c005
+and c006 were both listed here as needing an office and a surgery. Neither
+does: c005 is the evening *after* the first day and c006 is a phone call
+*to* a surgery, so both are couples at home and both scaffolded onto rooms
+that already existed. Read the lines before you draw anything — a set is the
+expensive part, and twice now the expensive part was not needed.
+
+The three that genuinely were new — the bus stop, the platform and the
+Bürgerbüro — are the three where the two speakers are strangers or fellow
+travellers standing in one place, which is also why all three are full frame.
 
 The twelve marked "rooms exist" should scaffold onto existing sets — but check
 the callout count the scaffolder reports. If it says `0 of 12`, the set has
@@ -241,6 +347,49 @@ exits with a message. **If you start servers in scripts, kill them.**
 **The film obeys the app's "Ton an" switch.** Chrome remembers mute and volume
 per origin, so a once-muted player starts muted forever with nothing on screen
 saying why. Entering Video mode forces `muted = false, volume = 1`.
+
+**A room drawn before anything was filmed in it has not been reviewed.** The
+living room stacked its window and radiator at x=1660 — exactly where the
+right-hand figure stands for the whole film — and shipped like that because
+c001-c003 use the bedroom, the kitchen, the shop and the restaurant. The first
+film to actually stand someone in it, c004, rang "die Heizung" round Sijan's
+face. Everything in that room now lives left of x=1520. The kitchen has a
+milder version of the same thing: `fruehstueck` and `fenster` run to x=1606
+and x=1584, so a ring on either is clipped by the figure's shoulder. c001
+shipped that way and c009 does too. Fixing it means moving the art and
+re-rendering c001 and c002, so it is left alone deliberately.
+
+**The callout tag needs room on the side it is put.** `SceneDialogue` used to
+pick that side from `box.y` alone, which says nothing about how tall the box
+is: the bus at the Haltestelle starts at y=292 and is 308 high, so it was sent
+"below" and its label landed at y≈700, under the speech bubble. It now
+reserves `CALLOUT_TAG_SPACE` and measures from there. Separately, `Callout`
+centred the tag on the ring with no clamp, so "die andere Straßenseite" over a
+box near the left edge started at x=-92 and lost two words. The tag now slides
+back inside the frame while the arrow stays on the ring.
+
+**Chromium crashes on long batches.** Rendering c007, c008 and c010 back to
+back killed the browser at frame 745 of the second one; the shell `for` loop
+carried on to the third and exited 0, so the failure was invisible in the exit
+status. A plain retry in a fresh process worked first time. **Check `video/`
+for the files you asked for, not the exit code.**
+
+**The clip format changes under you when ffmpeg appears.** `make-audio.py`
+picks its output from `shutil.which("ffmpeg")` — MP3 when it is on PATH, WAV
+when it is not — and then `prune_folder` **deletes the other extension**. So
+the first full audio re-render on a machine with ffmpeg silently converts
+every clip to MP3 and removes the WAVs.
+
+That used to break forced alignment outright. `align.py` reads samples by hand
+with the stdlib `wave` module, on purpose, to avoid adding TorchCodec — and
+`wave` cannot open an MP3, so every clip would have failed the moment the
+audio was re-rendered. It now sniffs the extension and sends anything that is
+not a `.wav` through `decode_with_ffmpeg`, which pipes 16-bit mono PCM out of
+ffmpeg. ffmpeg is already a hard dependency of the render pipeline, so this
+adds nothing new, and **it is still not TorchCodec** — the rule above stands.
+
+Worth knowing which way round you want it: 1352 lines is about 113 MB as WAV
+and about 14 MB as 64k mono MP3, in a repo that *is* the website.
 
 **Windows line endings.** `data.ts` is CRLF. A regex ending `;\n` matched none
 of its import lines, so the scene registry gained an entry without the import

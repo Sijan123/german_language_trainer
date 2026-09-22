@@ -40,7 +40,7 @@ export const schlafzimmerKeywords: Record<string, string[]> = {
   wecker: ["wecker", "akku", "handy", "uhr", "klingeln", "geklingelt", "gestellt", "batterie", "alarm"],
   bett: ["bett", "schlafen", "geschlafen", "müde", "aufstehen", "decke", "kissen", "traum"],
   fenster: ["fenster", "draußen", "wetter", "regnet", "sonne", "morgen", "dunkel", "hell"],
-  jacke: ["jacke", "mantel", "tasche", "anziehen", "hose", "kleidung", "schal"]
+  jacke: ["jacke", "mantel", "tasche", "anziehen", "hose", "kleidung", "schal", "haken"]
 };
 
 const A = schlafzimmerAnchors;

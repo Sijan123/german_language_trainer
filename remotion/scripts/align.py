@@ -30,6 +30,7 @@ The model (~1 GB) downloads itself on first run and is cached by torch.
 
 import json
 import os
+import subprocess
 import sys
 import unicodedata
 import wave as wavefile
@@ -76,15 +77,54 @@ def romanize(word):
     return "".join(out)
 
 
+def decode_with_ffmpeg(path):
+    """
+    Anything that is not a PCM WAV, decoded to 16-bit mono PCM by ffmpeg.
+
+    make-audio.py writes MP3 whenever ffmpeg is on PATH, and prunes the other
+    extension afterwards — so the moment the audio is re-rendered on a machine
+    with ffmpeg, every clip this script is asked to open is an MP3. The `wave`
+    module cannot read those.
+
+    ffmpeg is already a hard dependency of the render pipeline, so decoding
+    through it costs nothing new. This is deliberately *not* TorchCodec: the
+    point of reading the samples by hand is to keep one media stack in the
+    project, and that has not changed.
+    """
+    out = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", path,
+         "-f", "s16le", "-acodec", "pcm_s16le", "-ac", "1", "-"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    if out.returncode != 0 or not out.stdout:
+        raise SystemExit("could not decode " + path + "\n" + out.stderr.decode("utf-8", "replace"))
+
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a:0",
+         "-show_entries", "stream=sample_rate", "-of", "csv=p=0", path],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    rate = int(probe.stdout.decode().strip() or 22050)
+
+    data = np.frombuffer(out.stdout, dtype="<i2").astype(np.float32) / 32768.0
+    return torch.from_numpy(data.copy()).unsqueeze(0), rate
+
+
 def read_wav(path):
     """
-    A clip as a mono float tensor, read with the standard library.
+    A clip as a mono float tensor.
 
-    torchaudio.load() went through TorchCodec in 2.11 and now refuses to open
-    anything without it. These are 16-bit PCM WAVs written by Piper, which the
-    `wave` module has always been able to read, so there is no reason to add a
-    second media stack to the project just to get samples out of them.
+    A PCM WAV is read with the standard library. torchaudio.load() went through
+    TorchCodec in 2.11 and now refuses to open anything without it, and these
+    are 16-bit PCM WAVs written by Piper, which the `wave` module has always
+    been able to read — so there is no reason to add a second media stack to
+    the project just to get samples out of them.
+
+    Anything else goes through ffmpeg. See decode_with_ffmpeg.
     """
+    if os.path.splitext(path)[1].lower() != ".wav":
+        return decode_with_ffmpeg(path)
+
     with wavefile.open(path, "rb") as f:
         channels = f.getnchannels()
         width = f.getsampwidth()

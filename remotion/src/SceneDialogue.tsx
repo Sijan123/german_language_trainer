@@ -30,7 +30,7 @@ import { Callout } from "./components/Callout";
 import { Thought } from "./components/Thought";
 import type { ThoughtName } from "./components/ThoughtIcons";
 import { TitleCard, WortschatzCard } from "./components/Cards";
-import type { Dialogue, Scene } from "./types";
+import type { Dialogue, Film, Scene, Shot } from "./types";
 
 const W = 1920;
 const H = 1080;
@@ -51,7 +51,11 @@ const CALLOUT_TAG_SPACE = 130;
  * shadow falling into the gap from both sides and a thin light line down the
  * middle. It is the one piece of the frame that is not trying to be a place.
  */
-const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
+const Rooms: React.FC<{ scene: Scene; drift: number; labels?: boolean }> = ({
+  scene,
+  drift,
+  labels = true
+}) => (
   <AbsoluteFill>
     {scene.rooms.map((room, i) => {
       const def = SETS[room.set];
@@ -110,8 +114,11 @@ const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
     />
     ) : null}
 
-    {/* which room is which, small, top corners */}
-    {scene.rooms.map((room, i) => (
+    {/* which room is which, small, top corners. A filmed scene turns these
+        off and prints one chip for the current shot instead: these are placed
+        against the seam, and there is no seam once the camera is inside a
+        single room. */}
+    {labels ? scene.rooms.map((room, i) => (
       <div
         key={room.set + i}
         style={{
@@ -131,9 +138,98 @@ const Rooms: React.FC<{ scene: Scene; drift: number }> = ({ scene, drift }) => (
       >
         {room.label ?? SETS[room.set].label}
       </div>
-    ))}
+    )) : null}
   </AbsoluteFill>
 );
+
+/* ------------------------------------------------------------------ */
+/* The camera                                                          */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Where the camera is on this frame, for a scene that carries a `film` block.
+ *
+ * A shot belongs to the line that names it and is held until a later line
+ * names another, so the span a move is spread across is "until the next
+ * setup", not "until the next line". That is what lets a two-shot cover the
+ * first two lines and still push for the whole eight seconds rather than
+ * snapping back at the line break.
+ *
+ * Returns the window it is looking at, in full-frame coordinates. Turning
+ * that into a transform is the caller's job because the people and the rooms
+ * are in different layers and have to be given the same one.
+ */
+function cameraAt(
+  film: Film,
+  lines: Dialogue["lines"],
+  frame: number
+): { x: number; y: number; w: number } {
+  /* Every setup in the film, in the order it is cut to, with the frame it
+     lands on. The opening shot runs under the title card from frame 0. */
+  const setups: { at: number; shot: Shot }[] = [];
+  if (film.open) setups.push({ at: 0, shot: film.open });
+  for (const l of lines) {
+    const shot = film.shots[l.i];
+    if (shot) setups.push({ at: l.enterAt, shot });
+  }
+  if (!setups.length) return { x: W / 2, y: H / 2, w: W };
+
+  let k = 0;
+  while (k + 1 < setups.length && frame >= setups[k + 1].at) k++;
+  const cur = setups[k];
+  const end = k + 1 < setups.length ? setups[k + 1].at : lines[lines.length - 1].endAt;
+  /* How far through this setup we are. A one-frame setup would divide by
+     zero, which is a staging mistake rather than something to survive, but a
+     NaN camera is invisible in a still and obvious in a render, so clamp. */
+  const span = Math.max(1, end - cur.at);
+  const t = Math.min(1, Math.max(0, (frame - cur.at) / span));
+
+  const s = cur.shot;
+  const move = s.move ?? "push";
+  /* The move, as a fraction of the window. Small on purpose: 4% across four
+     seconds is the drift of an operator holding a shot, and anything more
+     across a fifty-second film reads as a zoom effect. */
+  const glide = theme.ease.inOut(t);
+  let w = s.w;
+  let x = s.x;
+  const y = s.y;
+  if (move === "push") w = s.w * (1 - 0.04 * glide);
+  if (move === "pull") w = s.w * (1 + 0.04 * glide);
+  if (move === "left") x = s.x - s.w * 0.03 * glide;
+  if (move === "right") x = s.x + s.w * 0.03 * glide;
+
+  /* A cut is a discontinuity and is left as one. A shot marked `cut: false`
+     is a move, so it is eased out of the previous framing over half a second
+     — the camera following something rather than the edit changing angle. */
+  if (s.cut === false && k > 0) {
+    const prev = setups[k - 1].shot;
+    const g = theme.ease.inOut(Math.min(1, (frame - cur.at) / 15));
+    return {
+      x: prev.x + (x - prev.x) * g,
+      y: prev.y + (y - prev.y) * g,
+      w: prev.w + (w - prev.w) * g
+    };
+  }
+  return { x, y, w };
+}
+
+/*
+ * The float that makes it an operator rather than a tripod.
+ *
+ * Two sine waves whose periods do not divide into each other, so the path
+ * never repeats inside a film's length and never crosses its own start. The
+ * amplitude is in window-fractions so a tight shot floats by the same visible
+ * amount as a wide one — a fixed pixel wobble is invisible when wide and
+ * seasick when close.
+ */
+function handheld(frame: number, fps: number) {
+  const a = (frame / (fps * 6.3)) * Math.PI * 2;
+  const b = (frame / (fps * 4.1)) * Math.PI * 2;
+  return {
+    dx: Math.sin(a) * 0.006 + Math.sin(b * 0.37) * 0.003,
+    dy: Math.cos(b) * 0.005 + Math.sin(a * 0.53) * 0.002
+  };
+}
 
 /* ------------------------------------------------------------------ */
 
@@ -186,6 +282,58 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
     : undefined;
   const thinker = thought && line ? scene.cast[line.s] : undefined;
 
+  /* -------------------------------------------------------- the camera */
+
+  /*
+   * A scene with no `film` block gets the identity transform, not a
+   * near-identity one: `scale(1) translate(0,0)` still promotes the layer and
+   * still resamples it, and the twenty films already rendered have to stay
+   * exactly as they are. So the whole camera collapses to null and the two
+   * layers are handed `undefined`, which is what they were given before.
+   */
+  const cam = scene.film ? cameraAt(scene.film, d.lines, frame) : null;
+  let camStyle: React.CSSProperties | undefined;
+  let roomBlur = 0;
+  if (cam && scene.film) {
+    const float = handheld(frame, fps);
+    const w = cam.w;
+    const s = W / w;
+    const cx = cam.x + w * float.dx;
+    const cy = cam.y + w * float.dy;
+    /* transformOrigin is the frame's own top-left, so the window maps by
+       scaling about 0,0 and then sliding the window's centre to the centre of
+       the frame. Doing it the other way round - origin at the centre - means
+       the translation is in post-scale pixels and every shot has to be
+       written twice. */
+    camStyle = {
+      transformOrigin: "0 0",
+      transform: `translate(${W / 2 - cx * s}px, ${H / 2 - cy * s}px) scale(${s})`,
+      willChange: "transform"
+    };
+    /* Depth of field, faked the only way a flat drawing allows: the rooms
+       soften as the camera closes in and the people, who are in their own
+       layer, do not. Scaled by 1/s as well, because the blur is applied
+       before the transform and would otherwise be magnified with it. */
+    const focus = scene.film.focus ?? 0;
+    roomBlur = focus > 0 ? (focus * Math.max(0, s - 1)) / Math.max(1, s) : 0;
+  }
+
+  /* The chip in the corner, for a filmed scene: one label for the current
+     shot rather than one per room. `null` means the shot asked for none. */
+  const shotLabel = (() => {
+    if (!scene.film) return undefined;
+    const setups: Shot[] = [];
+    const ats: number[] = [];
+    if (scene.film.open) { setups.push(scene.film.open); ats.push(0); }
+    for (const l of d.lines) {
+      const sh = scene.film.shots[l.i];
+      if (sh) { setups.push(sh); ats.push(l.enterAt); }
+    }
+    let k = -1;
+    for (let j = 0; j < ats.length; j++) if (frame >= ats[j]) k = j;
+    return k >= 0 ? setups[k].label ?? null : null;
+  })();
+
   return (
     <AbsoluteFill style={{ background: theme.color.bg, overflow: "hidden" }}>
       {/* --------------------------------------------------------- audio */}
@@ -196,8 +344,29 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
       ))}
 
       {/* ---------------------------------------------------------- rooms */}
-      <div style={{ opacity: arrive }}>
-        <Rooms scene={scene} drift={drift} />
+      {/* The camera is applied to the rooms and to the people separately, and
+          never to the card, the chips or the grade: those are the things
+          printed on the film rather than things in front of the lens. Giving
+          them the same transform is what keeps a callout on its object while
+          the shot moves. */}
+      {/* Both wrappers carry the frame's own box explicitly. A `transform` or
+          a `filter` makes an element the containing block for the absolutely
+          positioned things inside it, so an auto-sized wrapper would collapse
+          to nothing and take the rooms with it - the layer was a bare
+          `<div style={{opacity}}>` before there was a camera, and it could
+          afford to be. */}
+      <div style={{ position: "absolute", inset: 0, width: W, height: H, ...camStyle, opacity: arrive }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: W,
+            height: H,
+            ...(roomBlur > 0 ? { filter: `blur(${roomBlur.toFixed(2)}px)` } : null)
+          }}
+        >
+          <Rooms scene={scene} drift={drift} labels={!scene.film} />
+        </div>
       </div>
 
       {/* --------------------------------------------- people and pointer */}
@@ -205,7 +374,7 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
         viewBox={`0 0 ${W} ${H}`}
         width={W}
         height={H}
-        style={{ position: "absolute", inset: 0 }}
+        style={{ position: "absolute", inset: 0, ...camStyle }}
       >
         {Object.entries(scene.cast).map(([name, actor], i) => (
           <Character
@@ -256,6 +425,30 @@ export const SceneDialogue: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({
           />
         ) : null}
       </svg>
+
+      {/* ------------------------------------------------ the shot's chip */}
+      {/* Printed on the film, so it sits outside the camera and does not
+          drift, scale or soften with the room behind it. */}
+      {scene.film && shotLabel ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 38,
+            left: 40,
+            opacity: arrive,
+            fontFamily: theme.font.mono,
+            fontSize: 20,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: theme.color.inkSoft,
+            background: "rgba(255,255,255,.72)",
+            borderRadius: 999,
+            padding: "8px 18px"
+          }}
+        >
+          {shotLabel}
+        </div>
+      ) : null}
 
       {/* --------------------------------------------------------- bubble */}
       {inScene && line ? (
