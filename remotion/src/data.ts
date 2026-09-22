@@ -38,11 +38,41 @@ import { c017 } from "./scenes/c017";
 import { c018 } from "./scenes/c018";
 import { c019 } from "./scenes/c019";
 import { c020 } from "./scenes/c020";
+import { c021 } from "./scenes/c021";
+import { c022 } from "./scenes/c022";
+import { c023 } from "./scenes/c023";
+import { c024 } from "./scenes/c024";
+import { c025 } from "./scenes/c025";
+import { c026 } from "./scenes/c026";
+import { c027 } from "./scenes/c027";
+import { c028 } from "./scenes/c028";
+import { c029 } from "./scenes/c029";
+import { c030 } from "./scenes/c030";
+import { c031 } from "./scenes/c031";
+import { c032 } from "./scenes/c032";
+import { c033 } from "./scenes/c033";
+import { c034 } from "./scenes/c034";
+import { c035 } from "./scenes/c035";
+import { c036 } from "./scenes/c036";
+import { c037 } from "./scenes/c037";
+import { c038 } from "./scenes/c038";
+import { c039 } from "./scenes/c039";
+import { c040 } from "./scenes/c040";
+import { c041 } from "./scenes/c041";
+import { c042 } from "./scenes/c042";
+import { c043 } from "./scenes/c043";
+import { c044 } from "./scenes/c044";
+import { c045 } from "./scenes/c045";
+import { c046 } from "./scenes/c046";
+import { c047 } from "./scenes/c047";
+import { c048 } from "./scenes/c048";
+import { c049 } from "./scenes/c049";
+import { c050 } from "./scenes/c050";
 import type { Dialogue, Line, Scene, Word } from "./types";
 
 type RawWord = { w: string; a: number; b: number; ok: boolean };
 
-const SCENES: Record<string, Scene> = { c001, c002, c003, c004, c005, c006, c007, c008, c009, c010, c011, c012, c013, c014, c015, c016, c017, c018, c019, c020 };
+const SCENES: Record<string, Scene> = { c001, c002, c003, c004, c005, c006, c007, c008, c009, c010, c011, c012, c013, c014, c015, c016, c017, c018, c019, c020, c021, c022, c023, c024, c025, c026, c027, c028, c029, c030, c031, c032, c033, c034, c035, c036, c037, c038, c039, c040, c041, c042, c043, c044, c045, c046, c047, c048, c049, c050 };
 
 const raw = dialoguesJson as unknown as Record<string, Omit<Dialogue, "lines"> & {
   lines: Omit<Line, "words">[];

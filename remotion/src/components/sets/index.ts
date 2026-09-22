@@ -25,6 +25,12 @@ import { KuecheGross, kuecheGrossAnchors, kuecheGrossKeywords } from "./KuecheGr
 import { Baeckerei, baeckereiAnchors, baeckereiKeywords } from "./Baeckerei";
 import { Markt, marktAnchors, marktKeywords } from "./Markt";
 import { Bekleidung, bekleidungAnchors, bekleidungKeywords } from "./Bekleidung";
+import { Buero, bueroAnchors, bueroKeywords } from "./Buero";
+import { Apotheke, apothekeAnchors, apothekeKeywords } from "./Apotheke";
+import { Strasse, strasseAnchors, strasseKeywords } from "./Strasse";
+import { Rezeption, rezeptionAnchors, rezeptionKeywords } from "./Rezeption";
+import { Gepaeck, gepaeckAnchors, gepaeckKeywords } from "./Gepaeck";
+import { Halle, halleAnchors, halleKeywords } from "./Halle";
 
 export type SetDef = {
   Component: React.FC;
@@ -157,6 +163,57 @@ export const SETS: Record<string, SetDef> = {
     width: 1920,
     anchors: bekleidungAnchors,
     keywords: bekleidungKeywords
+  },
+  /* Drawn full frame for c023, and deliberately also legible as its own left
+     half so c024 can put it on the far end of a phone line. See Buero.tsx. */
+  buero: {
+    Component: Buero,
+    label: "Büro",
+    origin: 0,
+    width: 1920,
+    anchors: bueroAnchors,
+    keywords: bueroKeywords
+  },
+  apotheke: {
+    Component: Apotheke,
+    label: "Apotheke",
+    origin: 0,
+    width: 1920,
+    anchors: apothekeAnchors,
+    keywords: apothekeKeywords
+  },
+  /* One street for three films — see Strasse.tsx. */
+  strasse: {
+    Component: Strasse,
+    label: "Straße",
+    origin: 0,
+    width: 1920,
+    anchors: strasseAnchors,
+    keywords: strasseKeywords
+  },
+  rezeption: {
+    Component: Rezeption,
+    label: "Rezeption",
+    origin: 0,
+    width: 1920,
+    anchors: rezeptionAnchors,
+    keywords: rezeptionKeywords
+  },
+  gepaeck: {
+    Component: Gepaeck,
+    label: "Gepäckausgabe",
+    origin: 0,
+    width: 1920,
+    anchors: gepaeckAnchors,
+    keywords: gepaeckKeywords
+  },
+  halle: {
+    Component: Halle,
+    label: "Sporthalle",
+    origin: 0,
+    width: 1920,
+    anchors: halleAnchors,
+    keywords: halleKeywords
   }
 };
 
@@ -182,9 +239,13 @@ export const TOPIC_ROOMS: Record<string, string[]> = {
   unterwegs: ["bushaltestelle"],
   reisen: ["bahnhof"],
   amt: ["buergerbuero"],
-  /* Both of these are couples at home talking *about* somewhere else — an
-     office, a surgery — so they get rooms of a flat, not the place they are
-     discussing. The bedroom is the only home set drawn for the left half. */
+  /*
+   * "arbeit" is the topic that most needs reading line by line. c005 and c025
+   * are couples at home talking *about* work and get rooms of a flat; c023 is
+   * a conversation with a manager and is set in the office itself. The default
+   * stays at home because that is still the commoner case, but the office now
+   * exists for when it is not.
+   */
   arbeit: ["schlafzimmer", "wohnzimmer"],
   gesundheit: ["schlafzimmer", "kueche"],
   paar: ["wohnzimmer", "kueche"],

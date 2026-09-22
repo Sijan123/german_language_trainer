@@ -32,7 +32,20 @@ export const VIDEO = {
   "c017": { seconds: 47.67, lines: 13 },
   "c018": { seconds: 48.13, lines: 13 },
   "c019": { seconds: 43.57, lines: 12 },
-  "c020": { seconds: 46.1, lines: 13 }
+  "c020": { seconds: 46.1, lines: 13 },
+  "c021": { seconds: 45.87, lines: 12 },
+  "c022": { seconds: 46.3, lines: 12 },
+  "c023": { seconds: 47.53, lines: 13 },
+  "c024": { seconds: 47.23, lines: 12 },
+  "c025": { seconds: 46.77, lines: 13 },
+  "c026": { seconds: 45.73, lines: 13 },
+  "c027": { seconds: 43.73, lines: 12 },
+  "c028": { seconds: 45.43, lines: 12 },
+  "c029": { seconds: 47.07, lines: 12 },
+  "c030": { seconds: 48.27, lines: 13 },
+  "c031": { seconds: 48.83, lines: 13 },
+  "c032": { seconds: 52.07, lines: 13 },
+  "c033": { seconds: 48.93, lines: 13 }
 };
 
 /** What the player needs for this dialogue, or null if it has no film. */

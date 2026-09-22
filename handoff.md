@@ -163,10 +163,27 @@ thoughts: {
 }
 ```
 
-`icon` is a key of `ICONS` in `components/ThoughtIcons.tsx`. Six exist:
-`schreibtisch` `chef` `kantine` `bus` `besprechung` `gebaeude`. **Naming an
-icon that does not exist draws nothing** — there is no throw, unlike a callout
-naming a missing anchor, so check the bubble actually has something in it.
+`icon` is a key of `ICONS` in `components/ThoughtIcons.tsx`. Twenty-three
+exist. The first eleven were drawn for c001-c020:
+
+`schreibtisch` `chef` `kantine` `bus` `besprechung` `gebaeude` `paket`
+`briefkasten` `tonne` `geld` `ausweis`
+
+and twelve more for c021-c050:
+
+`brief` `koffer` `handy` `auto` `fahrrad` `kalender` `karte` `uhr` `medizin`
+`zahn` `ball` `schiff`
+
+**Naming an icon that does not exist draws nothing** — there is no throw,
+unlike a callout naming a missing anchor, so check the bubble actually has
+something in it.
+
+The second batch was drawn because the dialogues from c021 on stop being about
+the rooms they are in. A moving day, a parking fine, a cancelled evening and a
+lost suitcase are about objects no set owns, and several of those films ran on
+a single pointer before the icons existed. `kalender` and `uhr` in particular
+carry a lot of weight: A2 dialogues are full of days and times, and a time is
+the commonest thing in this whole set that has nothing in any room to point at.
 
 Drawing a new icon is the cost here, the way a new room is the cost of a
 callout somewhere new — but it is a much smaller cost: an icon is a flat
@@ -180,6 +197,68 @@ frame, and is clamped so it cannot leave the frame. The trailing dots run
 **diagonally** from beside the temple, not straight up: the cloud's underside
 sits about level with the top of the head, so a vertical run had twelve pixels
 to work with and put all three dots inside the bubble's bottom lobe.
+
+---
+
+## 4c. Shooting a film instead of staging one
+
+Every film before c020 is a locked-off two-shot: both rooms, whole frame, for
+fifty seconds. It is readable and it is not filmed. A scene that carries a
+`film` block is cut like coverage instead — the camera sits on whoever is
+talking, or on the thing being talked about, and moves the whole time it is
+there.
+
+**c020 is the only one that has it.** A scene without `film` gets no transform
+at all, not a near-identity one, so the other films render exactly as they did
+before the camera existed. Do not add it to a film that has already shipped
+without re-watching the result.
+
+```ts
+film: {
+  focus: 3.4,
+  open: { x: 960, y: 540, w: 1840, move: "push", label: "Die Wohnung" },
+  shots: {
+    0: { x: 480, y: 545, w: 900, move: "push", label: "Schlafzimmer" },
+    3: { x: 1550, y: 531, w: 700, move: "push", label: null }
+  }
+}
+```
+
+A shot is a window on the frame in full-frame coordinates: `w` is how wide a
+slice you are looking at, and 1920 is everything. It belongs to the line that
+names it and is held until a later line names another, so a two-shot covering
+four lines is written once and its move spreads across all four.
+
+Three sizes and no others, which is what stops it looking like a zoom demo:
+1840 is the whole flat, 900 is one room, 700-720 is one person.
+
+Things that will bite:
+
+- **Leave margin at the room edges.** `handheld` floats the camera by about
+  0.6% of the window width. A 960-wide window centred on a 960-wide room is
+  flush against both edges and drifts off the drawing. Use 900.
+- **`pull` is unavailable at the wide end.** The window grows, so a shot near
+  1840 wide pulls straight past the edge of the art. Push or track instead.
+- **A thought forces a wide shot.** `Thought` places the cloud at a fixed
+  y=236 in *frame* coordinates and its top lobe reaches y≈58 wherever the
+  camera is. Holding that and the speaker's face clear of the speech card
+  needs ~745px of window height, so a thought line cannot be tighter than
+  about 1320 wide. c020's lines 2 and 7 are wides for this reason and nothing
+  else.
+- **A callout can pin you too.** The living room's `fenster` starts at x=985,
+  25px inside a room that starts at 960, and with the ring's padding the
+  callout begins at 971 — so no shot that stays inside that room can hold it.
+  c020 line 4 goes wide.
+- **The card, the chips and the grade do not move.** They are printed on the
+  film. The rooms and the people get the same transform, which is what keeps a
+  ring on its object while the shot moves.
+- `focus` fakes depth of field by softening the rooms as the camera closes in
+  while the people, who are in their own layer, stay sharp. On-screen blur
+  works out at `focus x (scale - 1)`, so the widest shot is imperceptible and
+  the tightest is about four pixels.
+
+It costs about three times the render time of a locked-off film — the blur is
+a full-frame filter on every frame — so budget fifteen minutes, not five.
 
 ---
 
@@ -205,6 +284,27 @@ time a room moved its callouts stayed behind.
 | `baeckerei` | **full frame** | `brot` `broetchen` `kuchen` `kasse` `theke` |
 | `markt` | **full frame** | `erdbeeren` `kartoffeln` `kaesestand` `preis` `stand` |
 | `bekleidung` | **full frame** | `hose` `kassenbon` `jacken` `kabine` `theke` |
+| `buero` | **full frame** | `kalender` `fenster` `schreibtisch` `uhr` `regal` |
+| `apotheke` | **full frame** | `regal` `rezept` `saft` `kreuz` `tresen` |
+| `strasse` | **full frame** | `fahrrad` `auto` `scheibe` `schild` `bremse` |
+| `rezeption` | **full frame** | `schluessel` `schild` `karte` `koffer` `tresen` |
+| `gepaeck` | **full frame** | `anzeige` `band` `koffer` `rucksack` `schalter` |
+| `halle` | **full frame** | `schild` `tor` `ball` `bank` `schuhe` |
+
+The six new ones were drawn for c021-c050. Two of them earn their cost more
+than once: `strasse` carries a car, a sign *and* a bicycle because it has to
+serve c029, c030 and c031, and `buero` is laid out so that its own left half
+reads as a room on its own — that is what lets c024 put it on the far end of a
+telephone line. A full-frame set dropped into a 960-wide room shows its x
+0-960 and `findAnchor` shifts its boxes to match, so **a full-frame set can be
+used as a half if you draw it knowing that**. `buergerbuero` turned out to
+work this way by accident and c041, c043 and c044 all use it as the office at
+the other end of a call.
+
+When a set is used as a half, check which anchors survive the crop. `buero` in
+the right-hand half keeps only `kalender`; its window and its monitor are both
+cut off by the room's edge, and a ring on either would have been drawn partly
+outside the room it belongs to.
 
 `bad` is only the **third left-half set**. Until it existed every two-room
 film set at home had to use the bedroom, because the kitchen and the living
@@ -256,27 +356,12 @@ something wrong first:
 
 ## 6. Current state
 
-20 of 108 dialogues have films, and **all 108 now have audio** (1352 MP3
-clips, 22.5 MB). 57 MB in `video/` total.
+**c001-c050 all have films**, and all 108 dialogues have audio (1352 MP3
+clips, 22.5 MB). c051-c108 have no scene yet — 58 left.
 
-| id | topic | title | |
-|---|---|---|---|
-| c001-c010 | various | see git history | ✅ |
-| c011 | alltag | Die Waschmaschine ist voll | ✅ |
-| c012 | alltag | Wer bringt den Müll raus? | ✅ |
-| c013 | alltag | Der Schlüssel ist weg | ✅ |
-| c014 | einkaufen | Die Hose ist zu eng | ✅ |
-| c015 | einkaufen | Samstag auf dem Markt | ✅ |
-| c016 | einkaufen | Das Paket ist nicht angekommen | ✅ |
-| c017 | essen | Zusammen kochen | ✅ |
-| c018 | essen | Beim Bäcker | ✅ |
-| c019 | essen | Gäste kommen zum Essen | ✅ |
-| c020 | wohnen | Eine Wohnung besichtigen | ✅ |
-| c021-c108 | various | 88 left | no scene yet |
-
-Of the 88 remaining, 16 are topics with no room mapping at all (`lernen`,
-`technik`). The other 72 map to a topic that has rooms — but read §6 below
-before trusting that.
+Of those 58, the ones to look at first are `lernen` (c053-c058) and `technik`
+(c059 on), because neither topic has any room mapping at all. Everything else
+maps to a topic that has rooms, which is not the same as being set in one.
 
 **The topic mapping is a blunt instrument and it gets worse the further you
 go.** Of c011-c020, scaffolded straight from `TOPIC_ROOMS`, **six of ten were
@@ -291,6 +376,35 @@ in the wrong place**:
 | c017 | restaurant | their own kitchen — they are cooking, not eating out |
 | c018 | restaurant | a bakery — you sit down in one and queue in the other |
 
+c021-c050 was worse: **eleven of thirty** had to move, and five of them
+reported `0 of N`.
+
+| id | proposed | actually |
+|---|---|---|
+| c023 | bedroom + living room | an office — he is asking a manager for leave, in Sie |
+| c024 | bedroom + living room | ill at home, phoning the office |
+| c026 | bedroom + kitchen | a pharmacy; **0 of 13** |
+| c027 | bedroom + kitchen | one kitchen, both of them — she can see he is not eating |
+| c029 | bus stop | a street, beside their own car; **0 of 12** |
+| c030 | bus stop | a street, beside a parked car; **0 of 13** |
+| c031 | bus stop | a street, off someone's garage; **0 of 13** |
+| c032 | railway platform | a hotel reception |
+| c033 | railway platform | an airport baggage hall |
+| c034 | railway platform | at home, planning — nothing named is in the room |
+| c036 | living room | a sports hall; **0 of 13** |
+| c040 | Bürgerbüro | at home, reading a letter that arrived |
+| c050 | bedroom + kitchen | one kitchen — it opens on the state of it |
+
+Note the shape of it: topic "unterwegs" sent all three of its dialogues to a
+bus stop and all three were about a car or a bicycle; topic "reisen" sent all
+three of its to a platform and none of them was at a station. **A topic with
+one room mapping will send every dialogue under it to the same wrong place.**
+
+The opposite mistake is just as common. c034, c035, c037 and c040 all *sound*
+like they need a new room — a ferry, a cinema, a concert hall, a government
+office — and all four are two people at home talking about somewhere else.
+They run on thought bubbles and they were free.
+
 **`0 of N` is the strongest signal this project produces.** It does not mean
 the dialogue has nothing to illustrate; it means the dialogue has been put
 somewhere that has nothing to do with it. c016 went on to get four pointers
@@ -303,21 +417,25 @@ does: c005 is the evening *after* the first day and c006 is a phone call
 that already existed. Read the lines before you draw anything — a set is the
 expensive part, and twice now the expensive part was not needed.
 
-The three that genuinely were new — the bus stop, the platform and the
-Bürgerbüro — are the three where the two speakers are strangers or fellow
-travellers standing in one place, which is also why all three are full frame.
+Every set that has genuinely been needed so far — the bus stop, the platform,
+the Bürgerbüro, and now the office, the pharmacy, the street, the reception,
+the baggage hall and the sports hall — is one where the two speakers are
+strangers or colleagues standing in one place. **That is the test.** A room is
+needed when the dialogue happens somewhere, not when it mentions somewhere.
+All nine are full frame for the same reason.
 
-The twelve marked "rooms exist" should scaffold onto existing sets — but check
-the callout count the scaffolder reports. If it says `0 of 12`, the set has
-nothing that dialogue talks about, and you either add anchors to the set or
-accept a film with no pointers. c011 (a washing machine) is the standing
-example: the living room has no washing machine.
+Check the callout count the scaffolder reports. If it says `0 of 12`, the set
+has nothing that dialogue talks about, and you either add anchors to the set,
+draw the right room, or accept a film with no pointers. c011 (a washing
+machine) is the standing example: the living room has no washing machine.
 
-Only 20 of 108 dialogues have rendered audio at all. The rest need
-`make-audio.py` run first.
+Where a dialogue is genuinely about elsewhere, the cheap fix is an icon, not a
+room — see §4b. Twelve were added for c021-c050 and they are what took films
+like c034, c037, c042 and c045 from one pointer to three or four.
 
-At ~3 MB each, all 20 would be ~60 MB committed into a repo that *is* the
-website. Decide that deliberately.
+At ~2.5-3 MB each, the 50 films are about 140 MB committed into a repo that
+*is* the website. That was decided film by film rather than all at once, which
+is worth noticing before adding the next 58.
 
 ---
 
@@ -373,6 +491,25 @@ back killed the browser at frame 745 of the second one; the shell `for` loop
 carried on to the third and exited 0, so the failure was invisible in the exit
 status. A plain retry in a fresh process worked first time. **Check `video/`
 for the files you asked for, not the exit code.**
+
+**A duplicate key in `theme.set` does not warn — it silently wins.** The
+street drawn for c029-c031 was given a palette called `strasse`, which the bus
+stop had owned since c007. An object literal with the same key twice is legal
+JavaScript: the second one replaced the first, and every colour in
+`Bushaltestelle.tsx` became a colour of a different room. It surfaced as
+twenty `tsc` errors about properties that "do not exist", which is the lucky
+outcome — had the two palettes happened to share key names it would have
+rendered, wrongly, with no error at all. The new one is `parkstrasse`. **Grep
+`theme.ts` for the name before adding a palette.**
+
+**A composition only exists once `build-data.mjs` has seen it.** The
+compositions are generated from `src/data/dialogues.json`, so
+`npx remotion still src/index.ts c023 ...` on a freshly scaffolded scene fails
+with "Could not find composition with ID c023" listing every id but that one.
+`render.mjs` runs `build-data` first and so never hits this; a still pulled by
+hand before the first render does. Run `node scripts/build-data.mjs c023`
+first — and not while a render of another film is in flight, because that
+rewrites the same file.
 
 **The clip format changes under you when ffmpeg appears.** `make-audio.py`
 picks its output from `shutil.which("ffmpeg")` — MP3 when it is on PATH, WAV

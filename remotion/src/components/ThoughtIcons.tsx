@@ -25,7 +25,29 @@ export type ThoughtName =
   | "briefkasten"
   | "tonne"
   | "geld"
-  | "ausweis";
+  | "ausweis"
+  /*
+   * The second batch, drawn for c021-c050.
+   *
+   * Eleven icons covered the first twenty films because those were set in
+   * rooms that already held what the dialogue talked about. From c021 on that
+   * stops being true: a moving day, a parking fine, a lost suitcase and a
+   * cancelled appointment are all about objects no set owns, and without
+   * these the films ran on one pointer each. An icon is the cheap end of the
+   * same problem a new room solves.
+   */
+  | "brief"
+  | "koffer"
+  | "handy"
+  | "auto"
+  | "fahrrad"
+  | "kalender"
+  | "karte"
+  | "uhr"
+  | "medizin"
+  | "zahn"
+  | "ball"
+  | "schiff";
 
 const c = {
   wood: "#b98a54",
@@ -220,6 +242,164 @@ const Ausweis: React.FC = () => (
   </g>
 );
 
+/* ------------------------------------------------------------------ */
+/* Drawn for c021-c050                                                 */
+/* ------------------------------------------------------------------ */
+
+/** An envelope, flap down, with a stamp in the corner. */
+const Brief: React.FC = () => (
+  <g>
+    <rect x={-76} y={-46} width={152} height={96} rx={8} fill={c.plate} stroke={c.wallDark} strokeWidth={4} />
+    <path d="M-72 -42 L0 14 L72 -42" fill="none" stroke={c.wallDark} strokeWidth={5} />
+    <rect x={34} y={-36} width={32} height={26} rx={3} fill={c.tie} />
+    <rect x={40} y={-30} width={20} height={14} rx={2} fill={c.plate} opacity={0.6} />
+  </g>
+);
+
+/** A hard suitcase standing on its wheels. */
+const Koffer: React.FC = () => (
+  <g>
+    <rect x={-28} y={-62} width={56} height={22} rx={10} fill="none" stroke={c.metalDark} strokeWidth={9} />
+    <rect x={-62} y={-42} width={124} height={98} rx={11} fill={c.shirt} />
+    <rect x={-62} y={-12} width={124} height={15} fill="#33587a" />
+    <rect x={-18} y={-30} width={36} height={13} rx={5} fill={c.plate} opacity={0.75} />
+    <rect x={-52} y={56} width={18} height={13} rx={5} fill={c.metalDark} />
+    <rect x={34} y={56} width={18} height={13} rx={5} fill={c.metalDark} />
+  </g>
+);
+
+/** A phone, screen lit. */
+const Handy: React.FC = () => (
+  <g>
+    <rect x={-42} y={-64} width={84} height={128} rx={13} fill={c.screen} />
+    <rect x={-33} y={-48} width={66} height={94} rx={6} fill={c.screenLit} />
+    <rect x={-15} y={-58} width={30} height={6} rx={3} fill={c.metal} />
+    <circle cx={0} cy={54} r={8} fill={c.metal} />
+  </g>
+);
+
+/** A car from the side. The glass is what stops it reading as a bus. */
+const Auto: React.FC = () => (
+  <g>
+    <path d="M-72 12 L-52 -26 a12 12 0 0 1 10 -6 h84 a12 12 0 0 1 10 6 L72 12 z" fill={c.bus} />
+    <rect x={-80} y={8} width={160} height={34} rx={11} fill={c.busDark} />
+    <path d="M-44 8 L-32 -20 h28 v28 z" fill={c.glass} />
+    <path d="M6 8 v-28 h28 L52 8 z" fill={c.glass} />
+    <circle cx={-44} cy={44} r={19} fill={c.screen} />
+    <circle cx={-44} cy={44} r={8} fill={c.metal} />
+    <circle cx={44} cy={44} r={19} fill={c.screen} />
+    <circle cx={44} cy={44} r={8} fill={c.metal} />
+  </g>
+);
+
+/** A bicycle. Two wheels and a triangle is the whole of the recognition. */
+const Fahrrad: React.FC = () => (
+  <g fill="none" stroke={c.screen} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx={-48} cy={22} r={34} />
+    <circle cx={48} cy={22} r={34} />
+    <path d="M-48 22 L-10 -34 h30 L48 22" />
+    <path d="M-10 -34 L18 22 H-48" />
+    <path d="M-22 -46 h26" />
+    <path d="M20 -42 h22" />
+  </g>
+);
+
+/** A wall calendar with one day ringed. */
+const Kalender: React.FC = () => (
+  <g>
+    <rect x={-66} y={-46} width={132} height={110} rx={10} fill={c.plate} stroke={c.wallDark} strokeWidth={4} />
+    <rect x={-66} y={-46} width={132} height={32} rx={10} fill={c.tie} />
+    <rect x={-66} y={-24} width={132} height={10} fill={c.tie} />
+    <rect x={-42} y={-62} width={13} height={28} rx={6} fill={c.metalDark} />
+    <rect x={29} y={-62} width={13} height={28} rx={6} fill={c.metalDark} />
+    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+      <rect
+        key={i}
+        x={-50 + (i % 3) * 36}
+        y={-2 + Math.floor(i / 3) * 22}
+        width={22}
+        height={12}
+        rx={3}
+        fill={c.wallDark}
+        opacity={0.5}
+      />
+    ))}
+    <circle cx={-3} cy={26} r={17} fill="none" stroke={c.tie} strokeWidth={5} />
+  </g>
+);
+
+/** A ticket, torn edge on the right. */
+const Karte: React.FC = () => (
+  <g>
+    <rect x={-78} y={-42} width={156} height={84} rx={10} fill={c.plate} stroke={c.wallDark} strokeWidth={4} />
+    <line x1={26} y1={-38} x2={26} y2={38} stroke={c.wallDark} strokeWidth={4} strokeDasharray="9 9" />
+    {[0, 1, 2].map((i) => (
+      <rect key={i} x={-62} y={-24 + i * 18} width={64 - i * 16} height={9} rx={4} fill={c.wallDark} opacity={0.6} />
+    ))}
+    <rect x={40} y={-18} width={28} height={36} rx={4} fill={c.tie} opacity={0.85} />
+  </g>
+);
+
+/** A clock face. Hands at ten past ten, which is how clocks are drawn. */
+const Uhr: React.FC = () => (
+  <g>
+    <circle cx={0} cy={2} r={58} fill={c.plate} stroke={c.screen} strokeWidth={9} />
+    <line x1={0} y1={2} x2={-26} y2={-24} stroke={c.screen} strokeWidth={9} strokeLinecap="round" />
+    <line x1={0} y1={2} x2={24} y2={-28} stroke={c.screen} strokeWidth={7} strokeLinecap="round" />
+    <circle cx={0} cy={2} r={8} fill={c.screen} />
+  </g>
+);
+
+/** A bottle of syrup with two tablets beside it. */
+const Medizin: React.FC = () => (
+  <g>
+    <rect x={-66} y={-56} width={48} height={26} rx={6} fill={c.metal} />
+    <rect x={-74} y={-32} width={64} height={88} rx={10} fill={c.busDark} />
+    <rect x={-66} y={-10} width={48} height={44} rx={5} fill={c.plate} opacity={0.9} />
+    <circle cx={30} cy={16} r={24} fill={c.plate} stroke={c.wallDark} strokeWidth={4} />
+    <line x1={8} y1={16} x2={52} y2={16} stroke={c.wallDark} strokeWidth={4} />
+    <circle cx={62} cy={-22} r={20} fill={c.tie} opacity={0.85} />
+  </g>
+);
+
+/** A molar. Two roots is what makes it a tooth and not a cloud. */
+const Zahn: React.FC = () => (
+  <g>
+    <path
+      d="M-50 -18 a50 44 0 0 1 100 0 c0 26 -10 34 -16 60 c-5 22 -25 22 -28 -2 l-6 -26 l-6 26 c-3 24 -23 24 -28 2 c-6 -26 -16 -34 -16 -60 z"
+      fill={c.plate}
+      stroke={c.wallDark}
+      strokeWidth={4}
+      strokeLinejoin="round"
+    />
+  </g>
+);
+
+/** A football. */
+const Ball: React.FC = () => (
+  <g>
+    <circle cx={0} cy={2} r={56} fill={c.plate} stroke={c.screen} strokeWidth={5} />
+    <path d="M0 -32 L30 -10 L18 26 H-18 L-30 -10 Z" fill={c.screen} />
+    <path d="M0 -32 V-58" stroke={c.screen} strokeWidth={6} />
+    <path d="M30 -10 L54 -26" stroke={c.screen} strokeWidth={6} />
+    <path d="M-30 -10 L-54 -26" stroke={c.screen} strokeWidth={6} />
+    <path d="M18 26 L32 50" stroke={c.screen} strokeWidth={6} />
+    <path d="M-18 26 L-32 50" stroke={c.screen} strokeWidth={6} />
+  </g>
+);
+
+/** A ferry, with water under it so it is not a lorry. */
+const Schiff: React.FC = () => (
+  <g>
+    <rect x={-44} y={-56} width={76} height={44} rx={6} fill={c.plate} />
+    <rect x={-34} y={-46} width={20} height={17} rx={3} fill={c.glass} />
+    <rect x={-6} y={-46} width={20} height={17} rx={3} fill={c.glass} />
+    <path d="M-76 -12 h152 l-24 46 h-104 z" fill={c.shirt} />
+    <rect x={-76} y={-16} width={152} height={11} rx={4} fill="#33587a" />
+    <path d="M-80 48 q20 -12 40 0 t40 0 t40 0" fill="none" stroke={c.glass} strokeWidth={8} strokeLinecap="round" />
+  </g>
+);
+
 const ICONS: Record<ThoughtName, React.FC> = {
   schreibtisch: Schreibtisch,
   chef: Chef,
@@ -231,7 +411,19 @@ const ICONS: Record<ThoughtName, React.FC> = {
   briefkasten: Briefkasten,
   tonne: Tonne,
   geld: Geld,
-  ausweis: Ausweis
+  ausweis: Ausweis,
+  brief: Brief,
+  koffer: Koffer,
+  handy: Handy,
+  auto: Auto,
+  fahrrad: Fahrrad,
+  kalender: Kalender,
+  karte: Karte,
+  uhr: Uhr,
+  medizin: Medizin,
+  zahn: Zahn,
+  ball: Ball,
+  schiff: Schiff
 };
 
 export const ThoughtIcon: React.FC<{ name: ThoughtName }> = ({ name }) => {

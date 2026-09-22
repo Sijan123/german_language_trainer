@@ -324,6 +324,157 @@ export const theme = {
       pflanze: "#7faa78",
       rahmen: "#b0aa9a",
       chrome: "#a8aeb2"
+    },
+
+    /*
+     * An office. Cooler and greyer than the flat, which is the point — c023
+     * and c024 are the first dialogues where one of the two is at work, and
+     * the room has to look like somewhere you would not choose to be.
+     */
+    buero: {
+      wall: "#e3e6e8",
+      wallDark: "#d3d8dc",
+      floor: "#c9c8c4",
+      floorLine: "#b8b7b2",
+      desk: "#b98a54",
+      deskDark: "#96693c",
+      deskTop: "#c7a274",
+      metal: "#a3a9ae",
+      metalDark: "#878e94",
+      screen: "#2b3440",
+      screenLit: "#7fabc6",
+      sky: "#cfe2ec",
+      skyLow: "#e6eff3",
+      papier: "#f7f5ee",
+      papierInk: "#8a8478",
+      ordner: "#7a3f4a",
+      ordnerAlt: "#4d7aa0",
+      ordnerAlt2: "#7faa78",
+      pflanze: "#7faa78",
+      rahmen: "#b0aa9a",
+      shelf: "#b6b2a6",
+      shelfEdge: "#c9c5ba"
+    },
+
+    /* A pharmacy: the whitest room in the set, because that is what one is. */
+    apotheke: {
+      wall: "#eef0ee",
+      wallDark: "#e0e4e2",
+      floor: "#dcdcd6",
+      floorLine: "#cbcbc4",
+      tresen: "#c2beb2",
+      tresenTop: "#8e9389",
+      tresenDark: "#a9a599",
+      shelf: "#d6d9d6",
+      shelfEdge: "#c2c6c3",
+      schachtel: "#e8e4d8",
+      schachtelAlt: "#cfe2ec",
+      schachtelAlt2: "#dce8d6",
+      kreuz: "#4f9e6a",
+      kreuzDark: "#3d7d54",
+      flasche: "#b8474a",
+      papier: "#f7f5ee",
+      papierInk: "#8a8478",
+      glas: "#dbe7ea",
+      chrome: "#a8aeb2"
+    },
+
+    /*
+     * A residential street with somewhere to park. Outdoors, so `wall` is the
+     * sky and `floor` is the tarmac and the horizon still sits at y=648 —
+     * the same trick the bus stop, the platform and the market use.
+     *
+     * Named `parkstrasse` and not `strasse` because `strasse` was already
+     * taken by the bus stop, and a duplicate key in an object literal does not
+     * warn — the second one simply wins, and the bus stop lost every colour it
+     * had. Nothing here is allowed to be called `strasse` again.
+     */
+    parkstrasse: {
+      wall: "#cfe0ea",
+      wallDark: "#bed4e2",
+      floor: "#b9b6b0",
+      floorLine: "#a8a5a0",
+      haus: "#d8cfbe",
+      hausDark: "#c4b9a4",
+      dach: "#8d7f6e",
+      tor: "#b6bec4",
+      torDark: "#9aa3aa",
+      auto: "#c8523f",
+      autoDark: "#a8422f",
+      glas: "#cfe2ec",
+      reifen: "#39404a",
+      chrome: "#a8aeb2",
+      schild: "#3f6b8f",
+      schildInk: "#ffffff",
+      zettel: "#f7f5ee",
+      zettelInk: "#8a8478",
+      rad: "#3d4550",
+      baum: "#7faa78"
+    },
+
+    /* A hotel reception. Warmer and darker than the office. */
+    rezeption: {
+      wall: "#e6ddcf",
+      wallDark: "#d8cdbb",
+      floor: "#c3b49c",
+      floorLine: "#b2a289",
+      tresen: "#8d6a45",
+      tresenTop: "#a8825a",
+      tresenDark: "#6f5233",
+      fach: "#c4b49a",
+      fachDark: "#a8977c",
+      schluessel: "#d8b45e",
+      koffer: "#4d7aa0",
+      kofferDark: "#3b6285",
+      lampe: "#e8cf96",
+      papier: "#f7f5ee",
+      papierInk: "#8a8478",
+      pflanze: "#7faa78",
+      chrome: "#a8aeb2",
+      rahmen: "#b0aa9a"
+    },
+
+    /* An arrivals baggage hall: grey, lit from above, nobody's idea of nice. */
+    gepaeck: {
+      wall: "#dde1e4",
+      wallDark: "#ccd2d7",
+      floor: "#c4c6c8",
+      floorLine: "#b3b6b9",
+      band: "#6b727a",
+      bandDark: "#535961",
+      bandTop: "#858c94",
+      koffer: "#4d7aa0",
+      kofferAlt: "#9c5068",
+      kofferAlt2: "#7faa78",
+      schalter: "#b6b2a6",
+      schalterTop: "#8d9289",
+      anzeige: "#26303a",
+      anzeigeInk: "#7fd4a0",
+      papier: "#f7f5ee",
+      papierInk: "#8a8478",
+      chrome: "#a8aeb2"
+    },
+
+    /* A sports hall: wooden floor, painted lines, high windows. */
+    halle: {
+      wall: "#e2ddd2",
+      wallDark: "#d2ccbe",
+      floor: "#c99a5e",
+      floorLine: "#b0823f",
+      linie: "#c8523f",
+      linieAlt: "#3f6b8f",
+      tor: "#b6bec4",
+      torDark: "#98a1a8",
+      netz: "#f2efe6",
+      ball: "#f2efe6",
+      ballInk: "#39404a",
+      bank: "#b98a54",
+      bankDark: "#95663a",
+      sky: "#cfe2ec",
+      skyLow: "#e6eff3",
+      chrome: "#a8aeb2",
+      schild: "#2b3440",
+      schildInk: "#ffffff"
     }
   },
 
