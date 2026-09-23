@@ -17,11 +17,14 @@ highlight that disagrees with the subtitle under it is worse than none.
 
 Writes remotion/src/data/words.json:
 
-    { "c002": [ [ {"w": "Die", "a": 0.00, "b": 0.19, "ok": true}, ... ], ... ] }
+    { "c002": [ [ {"w": "Die", "a": 0.00, "b": 0.19, "ok": true,
+                  "c": [["d", 0.00, 0.06], ["i", 0.06, 0.12], ...]}, ... ], ... ] }
 
 Times are seconds from the start of that clip. `ok` is false where the aligner
 could not place a token and the span was filled in from its neighbours, so the
-renderer can tell an estimate from a measurement.
+renderer can tell an estimate from a measurement. `c` is the same thing one
+letter at a time (romanized, so "ü" arrives as "u", "e"); the acted films
+shape the mouths from it.
 
 Needs torch + torchaudio:
     pip install torch torchaudio numpy --index-url https://download.pytorch.org/whl/cpu
@@ -141,7 +144,10 @@ def read_wav(path):
 
 
 def align_clip(path, text, bundle, model, tokenizer, aligner, device):
-    """Return [(word, start_s, end_s, aligned_bool)] for one clip."""
+    """Return [(word, start_s, end_s, aligned_bool, letters)] for one clip.
+
+    `letters` is [[letter, start_s, end_s], ...] in the romanized spelling, or
+    empty for a token the aligner could not place."""
     words = text.split()
     romanized = [romanize(w) for w in words]
 
@@ -150,7 +156,7 @@ def align_clip(path, text, bundle, model, tokenizer, aligner, device):
     # so they are dropped from the alignment and filled in afterwards.
     keep = [i for i, r in enumerate(romanized) if r]
     if not keep:
-        return [(w, 0.0, 0.0, False) for w in words]
+        return [(w, 0.0, 0.0, False, []) for w in words]
 
     wave, sr = read_wav(path)
     if sr != bundle.sample_rate:
@@ -166,8 +172,15 @@ def align_clip(path, text, bundle, model, tokenizer, aligner, device):
     ratio = wave.shape[1] / emission.shape[1] / bundle.sample_rate
 
     placed = {}
+    letters = {}
     for slot, span in zip(keep, spans):
         placed[slot] = (span[0].start * ratio, span[-1].end * ratio, True)
+        # Each token of the span is one romanized letter. The acted films
+        # shape the mouth from these; the karaoke only ever wanted the word.
+        letters[slot] = [
+            [romanized[slot][k], round(float(t.start * ratio), 4), round(float(t.end * ratio), 4)]
+            for k, t in enumerate(span)
+        ]
 
     total = wave.shape[1] / bundle.sample_rate
     out = []
@@ -184,15 +197,15 @@ def align_clip(path, text, bundle, model, tokenizer, aligner, device):
             if b < a:
                 b = a
             ok = False
-        out.append((w, round(float(a), 4), round(float(b), 4), ok))
+        out.append((w, round(float(a), 4), round(float(b), 4), ok, letters.get(i, [])))
 
     # A word that ends after the next one starts makes the highlight jump
     # backwards. Clamp each end to the next start; the aligner rarely needs it.
     for i in range(len(out) - 1):
-        w, a, b, ok = out[i]
+        w, a, b, ok, c = out[i]
         nxt = out[i + 1][1]
         if b > nxt:
-            out[i] = (w, a, nxt, ok)
+            out[i] = (w, a, nxt, ok, c)
 
     return out
 
@@ -223,7 +236,7 @@ def main(ids):
             clip = os.path.join(ROOT, line["clip"].replace("/", os.sep))
             got = align_clip(clip, line["de"], bundle, model, tokenizer, aligner, device)
             shaky += sum(1 for g in got if not g[3])
-            per_line.append([{"w": w, "a": a, "b": b, "ok": ok} for w, a, b, ok in got])
+            per_line.append([{"w": w, "a": a, "b": b, "ok": ok, "c": c} for w, a, b, ok, c in got])
             print("  {} line {:>2}  {:>2} words  {}".format(
                 cid, line["i"] + 1, len(got), line["de"][:46]))
         words[cid] = per_line

@@ -13,6 +13,7 @@ import { loadFont as loadDisplay } from "@remotion/google-fonts/Fraunces";
 import { loadFont as loadMono } from "@remotion/google-fonts/IBMPlexMono";
 import { SceneDialogue } from "./SceneDialogue";
 import { FILMS } from "./data";
+import { SceneActed } from "./acted/SceneActed";
 
 /* Hero type must never fall back to a system font: the trainer is set in
    Fraunces and IBM Plex, and a video in Arial is a video from somewhere else. */
@@ -26,7 +27,8 @@ export const RemotionRoot: React.FC = () => (
       <Composition
         key={dialogue.id}
         id={dialogue.id}
-        component={SceneDialogue}
+        /* a scene with an `acted` block is played by people in a 3D room */
+        component={scene.acted ? SceneActed : SceneDialogue}
         durationInFrames={dialogue.durationInFrames}
         fps={dialogue.fps}
         width={1920}

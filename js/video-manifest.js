@@ -22,7 +22,7 @@ export const VIDEO = {
   "c007": { seconds: 48.33, lines: 12 },
   "c008": { seconds: 56.37, lines: 13 },
   "c009": { seconds: 48.03, lines: 12 },
-  "c010": { seconds: 48.5, lines: 13 },
+  "c010": { seconds: 82.79, lines: 13 },
   "c011": { seconds: 44.87, lines: 12 },
   "c012": { seconds: 45.1, lines: 12 },
   "c013": { seconds: 44.4, lines: 12 },

@@ -65,16 +65,23 @@ function ship(id) {
     mp4]);
 
   const d = JSON.parse(fs.readFileSync(path.join(proj, "src", "data", "dialogues.json"), "utf8"))[id];
+  /*
+   * The length comes from the file, not from dialogues.json: an acted film
+   * (src/acted/) adds silences for its business on top of the timing data,
+   * and c010 runs half a minute longer than the data says.
+   */
+  const seconds = Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration",
+    "-of", "csv=p=0", mp4], { encoding: "utf8" }).trim());
   /* A third of the way in: the chat is full, somebody is mid-sentence, and the
      outro has not started. */
-  const at = (d.intro + (d.durationInFrames - d.intro - d.outro) / 3) / d.fps;
+  const at = (d.intro / d.fps) + (seconds - (d.intro + d.outro) / d.fps) / 3;
 
   run("ffmpeg", ["-v", "error", "-y", "-ss", at.toFixed(2), "-i", mp4,
     "-frames:v", "1", "-q:v", "4", jpg]);
 
   return {
     id,
-    seconds: Number((d.durationInFrames / d.fps).toFixed(2)),
+    seconds: Number(seconds.toFixed(2)),
     lines: d.lines.length,
     bytes: fs.statSync(mp4).size
   };
@@ -162,6 +169,10 @@ if (!ids.length) {
 /* Timings and clips first: rendering a composition against a stale data file is
    the one mistake here that produces a video that looks fine and is wrong. */
 run("node", ["scripts/build-data.mjs", ...ids]);
+
+/* The room sounds the acted films play (footsteps, paper, the chime). They
+   are generated, not committed, and take a second to make. */
+run("node", ["scripts/make-sfx.mjs"]);
 
 /*
  * Then the word boundaries the karaoke is cut to. This needs Python with torch

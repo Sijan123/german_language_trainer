@@ -575,3 +575,110 @@ console.log(((d.lines[i].audioAt/30)+x.a).toFixed(2))"
 
 Then `ffmpeg -ss <t-0.3>` and `-ss <t+0.4>`: the ring should be absent in the
 first and landed in the second.
+
+---
+
+## 9. Acted films (3D)
+
+c010 is the pilot for a second kind of film: the dialogue **acted out** by
+Sijan and Shruti with bodies, in a 3D room, doing the physical business the
+lines imply — he waits on a bench, is called, walks to the desk, sits, takes
+his passport out of his inside pocket and hands it over; she checks it,
+types, gives him a form; he fills it in and signs. Everything printed on the
+film (subtitle card, karaoke, callout rings, thought bubbles, title and
+Wortschatz cards, grade, grain) is the same as in the drawn films.
+
+A scene becomes acted by carrying an `acted` block
+(`src/scenes/c010.ts` → `src/scenes/c010.acted.ts`). Delete that one line and
+the film falls back to its drawn staging, which is kept intact.
+
+### What is where
+
+```
+src/acted/
+  types.ts        the vocabulary: beats, cues, targets, shots, props
+  timeline.ts     compiles beats into per-person channels (the reusable part)
+  rig.ts          solves a body per frame: gait, sitting, IK arms/legs, gaze
+  world.ts        memoised solver for people, props, ink, room state
+  visemes.ts      mouth shapes from the aligner's letter timings
+  camera.ts       shots, glides, tracking, and 3D->screen projection
+  Person.tsx      the people, drawn from a solved body
+  Props.tsx       passport, folder, sheet, form (with real German), pen
+  models.tsx      Kenney GLB loading, re-centring, toon repaint
+  sets/           3D rooms: a layout (plain data) + a component
+  SceneActed.tsx  the composition
+public/models/kenney/   CC0 furniture (committed; everything else in public/ is not)
+scripts/make-sfx.mjs    synthesises footsteps, chair, paper, typing, pen, chime
+```
+
+### How a beat works
+
+Every beat hangs off the dialogue, never a frame number:
+
+```ts
+sij({ do: "reach", hand: "R", to: { body: "pocketIn" }, grip: 0.85,
+      at: { line: 3, end: true, plus: 0.4 } })
+```
+
+Cues: `{ line, word?, end? }`, `{ gap: i }` (start of the silence added before
+line i), `{ t }`, `{ after: id }`, each with `plus` seconds. Re-record a line
+and its business moves with it.
+
+Verbs: `walk step turn sit stand scoot lean twist look nod shake smile brows
+reach rest type gesture scribble tap jacket take put stow open chair screen
+display sound`. See `acted/types.ts` for each one's fields.
+
+**Silences.** `acted.gaps` adds seconds before a line for business that takes
+longer to do than to say; `tail` adds them after the last line. `data.ts`
+shifts every later line, word and letter, so the karaoke and mouths stay on
+the voice. The film is therefore longer than `dialogues.json` says, and
+`render.mjs` now measures the shipped file for the manifest.
+
+### Conventions
+
+- Metres. +x is screen right in the side-on master, +z towards the camera,
+  floor y = 0. Yaw 0 faces +x (right hand nearest the lens); yaw π faces -x.
+- Hand targets are the **middle of the palm**; `palm` is which way it faces
+  in the person's own frame (`down up in out forward back`).
+- Props: x along the long side, y out of the face, z across. A form lying
+  at yaw 0 has its top towards +x.
+- Kenney models all face +z with the origin at a corner; `<Model>` re-centres
+  them and turns them so `yaw` means what it means everywhere else.
+
+### Traps (each of these cost a render)
+
+- **Reach-then-take chases itself.** After `take`, a hand whose target was
+  `{ prop: X }` would follow X, which now follows the hand. The rig freezes
+  the target at the frame before the take. Keep that if you touch
+  `resolveTarget`.
+- **Looking at a prop in your own hand** is the same loop through the gaze;
+  `lookPoint` reads the hand directly for that case.
+- **Brows sloping in towards the nose read as anger**, and a heavy lid in the
+  shade colour read as a scowl. Both faces looked furious in the first render.
+- **A shade-coloured nose is a clown's nose** from the front.
+- **Finger curl is +angle about the hand's z**, towards the palm. The other
+  sign bends the fingers backwards and every resting hand reads palm-up.
+- **The pen tip needs several IK passes** to land on the paper; with two it
+  hovered 5 mm up and the ink came out as dots. Ink is recorded from where the
+  tip actually went, so a hover is a gap.
+- **The inside pocket is at chest height** (-0.25 m from the shoulder line),
+  not at the collar, or the hand ends up in the beard.
+- **Reach limits are real.** Across a 0.7 m desk the hand-over only works
+  with both leaning in (`lean` 0.25–0.3); she cannot reach the signature line
+  on his side, so at "Genau" she points rather than taps.
+- `<Model>` memoises on the *value* of `scale`; an inline array that
+  re-cloned the mesh every frame would make a render take hours.
+
+### Checking one
+
+Stills are cheap once bundled:
+
+```
+npx remotion bundle src/index.ts --out-dir=<tmp>/bundle
+npx remotion still <tmp>/bundle c010 <tmp>/f.png --frame 860 --scale=0.5
+```
+
+For motion, render the whole film at `--scale=0.25` (about three minutes)
+and tile every 8th frame with ffmpeg (`select`, `tile=4x3`): a pop in a
+hand-over or a skating foot shows up in a contact sheet where a still hides
+it.

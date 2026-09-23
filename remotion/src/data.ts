@@ -70,7 +70,7 @@ import { c049 } from "./scenes/c049";
 import { c050 } from "./scenes/c050";
 import type { Dialogue, Line, Scene, Word } from "./types";
 
-type RawWord = { w: string; a: number; b: number; ok: boolean };
+type RawWord = { w: string; a: number; b: number; ok: boolean; c?: [string, number, number][] };
 
 const SCENES: Record<string, Scene> = { c001, c002, c003, c004, c005, c006, c007, c008, c009, c010, c011, c012, c013, c014, c015, c016, c017, c018, c019, c020, c021, c022, c023, c024, c025, c026, c027, c028, c029, c030, c031, c032, c033, c034, c035, c036, c037, c038, c039, c040, c041, c042, c043, c044, c045, c046, c047, c048, c049, c050 };
 
@@ -100,7 +100,10 @@ function wordsFor(line: Omit<Line, "words">, aligned: RawWord[] | undefined, fps
     text: w.w,
     from: line.audioAt + Math.round(w.a * fps),
     to: line.audioAt + Math.round(w.b * fps),
-    aligned: w.ok
+    aligned: w.ok,
+    /* left fractional: a letter is shorter than a frame, and rounding them
+       would stack three onto one frame and leave the next one empty */
+    letters: w.c?.map(([ch, a, b]) => ({ ch, from: line.audioAt + a * fps, to: line.audioAt + b * fps }))
   }));
 }
 
@@ -126,7 +129,43 @@ export const DIALOGUES: Record<string, Dialogue> = Object.fromEntries(
  */
 export const FILMS = Object.values(DIALOGUES)
   .filter((d) => SCENES[d.id])
-  .map((d) => ({ dialogue: d, scene: SCENES[d.id] }));
+  .map((d) => ({ dialogue: withGaps(d, SCENES[d.id]), scene: SCENES[d.id] }));
+
+/*
+ * An acted film needs silences the dialogue does not have. Walking from the
+ * waiting bench to the desk takes four seconds and nobody says anything
+ * during it; finding a passport in an inside pocket takes two. The scene asks
+ * for those as seconds before a given line, and every line from there on
+ * moves later by that much — words and letters with it, so the karaoke and
+ * the mouths stay on the voice.
+ *
+ * Done here rather than in build-data.mjs because the gaps are staging, and
+ * staging lives in the scene file: re-running the timing script must not be
+ * able to lose them.
+ */
+function withGaps(d: Dialogue, scene: Scene): Dialogue {
+  const acted = scene.acted;
+  if (!acted) return d;
+  const sec = (s: number) => Math.round(s * d.fps);
+  let shift = 0;
+  const lines = d.lines.map((l) => {
+    shift += sec(acted.gaps[l.i] ?? 0);
+    const by = shift;
+    return {
+      ...l,
+      enterAt: l.enterAt + by,
+      audioAt: l.audioAt + by,
+      endAt: l.endAt + by,
+      words: l.words.map((w) => ({
+        ...w,
+        from: w.from + by,
+        to: w.to + by,
+        letters: w.letters?.map((c) => ({ ...c, from: c.from + by, to: c.to + by }))
+      }))
+    };
+  });
+  return { ...d, lines, durationInFrames: d.durationInFrames + shift + sec(acted.tail ?? 0) };
+}
 
 /*
  * A callout that names an anchor none of its rooms has used to do nothing at

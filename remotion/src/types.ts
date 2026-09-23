@@ -8,6 +8,8 @@
  * position, so adding a line to a dialogue cannot silently shift its callouts.
  */
 
+import type { Acted } from "./acted/types";
+
 /* ------------------------------------------------------------------ */
 /* Generated                                                           */
 /* ------------------------------------------------------------------ */
@@ -25,6 +27,12 @@ export type Word = {
    * the render can be honest about it if it ever needs to be.
    */
   aligned: boolean;
+  /**
+   * The same thing a letter at a time, in fractional frames, from the
+   * romanized spelling the aligner works in ("ü" arrives as "u", "e"). Only
+   * the acted films read it — it is what their mouths are shaped from.
+   */
+  letters?: { ch: string; from: number; to: number }[];
 };
 
 export type Line = {
@@ -188,6 +196,14 @@ export type Film = {
 
 export type Scene = {
   id: string;
+  /**
+   * Played out by people with bodies in a 3D room instead of drawn figures on
+   * a flat set: see src/acted/. When this is present the composition hands
+   * the whole film to SceneActed, and `rooms`, `cast` and `film` are unused
+   * (they stay filled in, so the scene still type-checks as a drawn one and
+   * can fall back to it by deleting this block).
+   */
+  acted?: Acted;
   /**
    * Are the two on the phone, or in the same place?
    *

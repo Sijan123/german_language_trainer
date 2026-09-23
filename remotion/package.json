@@ -9,17 +9,22 @@
     "data": "node scripts/build-data.mjs",
     "align": "python scripts/align.py",
     "studio": "remotion studio src/index.ts",
-    "film": "node scripts/render.mjs"
+    "film": "node scripts/render.mjs",
+    "sfx": "node scripts/make-sfx.mjs"
   },
   "dependencies": {
+    "@react-three/fiber": "^9.8.0",
     "@remotion/cli": "4.0.407",
     "@remotion/google-fonts": "^4.0.407",
+    "@remotion/three": "4.0.407",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "remotion": "4.0.407"
+    "remotion": "4.0.407",
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "@types/react": "19.2.2",
+    "@types/three": "^0.186.0",
     "typescript": "5.9.3"
   },
   "allowScripts": {

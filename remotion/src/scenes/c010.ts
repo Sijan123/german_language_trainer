@@ -11,10 +11,18 @@
  */
 
 import type { Scene } from "../types";
+import { c010Acted } from "./c010.acted";
 
 export const c010: Scene = {
   id: "c010",
   call: false,
+
+  /* Played by people in a 3D room: see c010.acted.ts. Delete this line and
+     the film goes back to the drawn staging below, which is kept intact. */
+  acted: c010Acted,
+  thoughts: {
+    11: { icon: "brief", label: "die Post", word: "Post" }
+  },
 
   rooms: [
     { set: "buergerbuero", from: 0, to: 1920 }
