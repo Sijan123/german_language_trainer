@@ -120,6 +120,10 @@ export type Ctx = {
   prop(name: string, f: number): Xform;
   /** who is holding a prop at frame f, if anyone: [person, hand, since frame] */
   heldBy(name: string, f: number): [string, Side, number] | null;
+  /** whose hand a prop is in at the bottom of its chain (a card in a wallet in a hand) */
+  rootHolder(name: string, f: number): [string, Side] | null;
+  /** where a prop is, given that this person's hand is at `x` this frame */
+  propVia(name: string, f: number, who: string, side: Side, x: Xform): Xform;
   /** another person, solved at this frame (their head, their hands) */
   body(name: string, f: number): Body;
   /** the core only — for a gaze aimed at someone, no limbs needed */
@@ -146,7 +150,9 @@ const BODY_SPOTS: Record<string, { from: "chest" | "pelvis"; off: Vec3; mirror: 
   /* the inside breast pocket on the left, reached across by the right hand */
   /* at chest height, a hand's width below the collarbone — not at the
      collar, where the first try put it and the hand ended up in the beard */
-  pocketIn: { from: "chest", off: [0.07, -0.25, -0.07], mirror: false, palm: "back" },
+  /* and just in front of the shirt, under the jacket's panel: further back
+     and the hand is inside the chest, which the rigged model shows */
+  pocketIn: { from: "chest", off: [0.12, -0.25, -0.07], mirror: false, palm: "back" },
   /* just in front of the jacket at pocket height: the way in and out */
   pocketOut: { from: "chest", off: [0.2, -0.27, -0.02], mirror: false, palm: "in" },
   /* holding something up in front of the chest to hand it over */
@@ -157,6 +163,8 @@ const BODY_SPOTS: Record<string, { from: "chest" | "pelvis"; off: Vec3; mirror: 
   read: { from: "chest", off: [0.3, -0.17, 0.03], mirror: true, palm: "up" },
   /* carrying something at the side while walking */
   carry: { from: "chest", off: [0.02, -0.56, 0.23], mirror: true, palm: "in" },
+  /* a cup at the lips: in front of the chin, a little to this hand's side */
+  drink: { from: "chest", off: [0.17, 0.1, 0.05], mirror: true, palm: "in" },
   /* hand on the thigh, sitting */
   thigh: { from: "pelvis", off: [0.2, 0.08, 0.14], mirror: true, palm: "down" }
 };
@@ -205,8 +213,13 @@ export function solveCore(p: PersonProg, f: number, ctx: Ctx): Core {
          of it into the final facing over the last few */
       const ahead = pathAt(seg, Math.min(seg.D, d + 0.3)).heading;
       const y0 = p.yaw.at(seg.f0 - 1);
-      const inW = smooth((f - seg.f0) / (ctx.fps * 0.45));
-      const outW = smooth((f - (seg.f1 - ctx.fps * 0.45)) / (ctx.fps * 0.45));
+      /* turning into the walk and out of it takes longer the further there
+         is to turn: half a second for a quarter turn was a whip for a half */
+      const startDir = pathAt(seg, Math.min(seg.D, 0.3)).heading;
+      const tin = ctx.fps * Math.max(0.45, 0.32 * Math.abs(angleDiff(y0, startDir)));
+      const tout = ctx.fps * Math.max(0.45, 0.32 * Math.abs(angleDiff(pathAt(seg, seg.D).heading, seg.face)));
+      const inW = smooth((f - seg.f0) / tin);
+      const outW = smooth((f - (seg.f1 - tout)) / tout);
       let y = y0 + angleDiff(y0, ahead) * inW;
       y = y + angleDiff(y, seg.face) * outW;
       yaw = y;
@@ -419,7 +432,10 @@ function palmWorld(c: Core, palm: Palm, side: Side): Vec3 {
   return norm(add(mul(c.chestF, v[0]), add(mul(c.chestU, v[1]), mul(c.chestR, v[2]))));
 }
 
-function resolveTarget(c: Core, t: Target, palm: Palm | "auto", side: Side, f: number, ctx: Ctx): HandAim {
+/** the hands of this body solved so far this frame */
+type Solved = Partial<Record<Side, Xform>>;
+
+function resolveTarget(c: Core, t: Target, palm: Palm | "auto", side: Side, f: number, ctx: Ctx, solved: Solved = {}): HandAim {
   let aim: HandAim;
   if ("body" in t) {
     aim = bodySpot(c, t.body, side, t.off);
@@ -435,7 +451,16 @@ function resolveTarget(c: Core, t: Target, palm: Palm | "auto", side: Side, f: n
      */
     const held = ctx.heldBy(t.prop, f);
     const at = held && held[0] === c.name ? held[2] - 1 : f;
-    const x = ctx.prop(t.prop, at);
+    /*
+     * And a thing inside something in the *other* hand (the card in the
+     * wallet he is holding) is wherever that hand is this frame, which is
+     * solved first for exactly this reason.
+     */
+    const root = held ? null : ctx.rootHolder(t.prop, f);
+    const x =
+      root && root[0] === c.name && root[1] !== side && solved[root[1]]
+        ? ctx.propVia(t.prop, f, c.name, root[1], solved[root[1]]!)
+        : ctx.prop(t.prop, at);
     const off = t.off ?? [0, 0, 0];
     const q = x.q;
     /* the offset is in the prop's own frame, so "the bottom of the form"
@@ -451,12 +476,12 @@ function resolveTarget(c: Core, t: Target, palm: Palm | "auto", side: Side, f: n
   return aim;
 }
 
-function evalHand(c: Core, segs: HandSeg[], i: number, side: Side, f: number, ctx: Ctx, depth = 0): HandAim {
+function evalHand(c: Core, segs: HandSeg[], i: number, side: Side, f: number, ctx: Ctx, depth = 0, solved: Solved = {}): HandAim {
   if (i < 0 || depth > 5) return restSpot(c, side);
   const seg = segs[i];
-  const B = resolveTarget(c, seg.to, seg.palm, side, f, ctx);
+  const B = resolveTarget(c, seg.to, seg.palm, side, f, ctx, solved);
   if (f >= seg.f1) return B;
-  const A = evalHand(c, segs, i - 1, side, f, ctx, depth + 1);
+  const A = evalHand(c, segs, i - 1, side, f, ctx, depth + 1, solved);
   const u = clamp((f - seg.f0) / Math.max(1, seg.f1 - seg.f0));
   const e = mjerk(u);
   const p = add(lerp3(A.p, B.p, e), [0, seg.arc * bump(u), 0]);
@@ -536,11 +561,29 @@ export function solveBody(p: PersonProg, f: number, ctx: Ctx): Body {
   const hand = {} as Record<Side, Xform>;
   const handAxes = {} as Body["handAxes"];
 
-  for (const side of ["L", "R"] as const) {
-    const segs = p.hands[side];
+  /* a hand going for something held in the other hand waits for that hand */
+  const current = (s: Side) => {
+    const segs = p.hands[s];
     let i = segs.length - 1;
     while (i >= 0 && segs[i].f0 > f) i--;
-    let aim = evalHand(c, segs, i, side, f, ctx);
+    return { segs, i };
+  };
+  const needs = (s: Side): Side | null => {
+    const { segs, i } = current(s);
+    for (const seg of [segs[i], segs[i - 1]]) {
+      if (!seg || !("prop" in seg.to)) continue;
+      if (ctx.heldBy(seg.to.prop, f)) continue;
+      const root = ctx.rootHolder(seg.to.prop, f);
+      if (root && root[0] === p.name && root[1] !== s) return root[1];
+    }
+    return null;
+  };
+  const order: Side[] = needs("L") === "R" ? ["R", "L"] : ["L", "R"];
+  const solved: Solved = {};
+
+  for (const side of order) {
+    const { segs, i } = current(side);
+    let aim = evalHand(c, segs, i, side, f, ctx, 0, solved);
 
     /* motions on top: typing, tapping, and writing, which replaces the aim */
     let penGoal: Vec3 | null = null;
@@ -594,26 +637,43 @@ export function solveBody(p: PersonProg, f: number, ctx: Ctx): Body {
     elbow[side] = r.sol.mid;
     wrist[side] = r.sol.tip;
     hand[side] = xbasis(r.sol.tip, r.bx, r.by, r.bz);
+    solved[side] = hand[side];
     handAxes[side] = { x: r.bx, y: r.by, z: r.bz };
   }
 
   /* ---- the head and the eyes */
   const look = gazeAt(p, c, f, ctx, { wrist, hand, handAxes });
-  const toH = sub(look.head, c.head0);
+  /*
+   * The head turns most of the way towards what the eyes are after, by the
+   * one rotation that carries the chest's forward onto that direction. Not
+   * as a yaw then a pitch: looking steeply down at something beside you, the
+   * yaw of a nearly vertical direction swings from one shoulder to the other
+   * for a centimetre of movement, and the head whipped round with it.
+   * Looking up and down is limited first, so the chin stays off the chest.
+   */
+  const toH = norm(sub(look.head, c.head0));
   const fl = dot(toH, c.chestF);
-  const ul = dot(toH, c.chestU);
+  const ul = clamp(dot(toH, c.chestU), -0.68, 0.45);
   const rl = dot(toH, c.chestR);
-  let hy = clamp(Math.atan2(-rl, Math.max(1e-4, fl)) * 0.82, -1.25, 1.25);
-  if (fl < 0) hy = clamp(Math.sign(-rl) * 1.25, -1.25, 1.25);
-  let hp = clamp(Math.atan2(ul, Math.hypot(fl, rl)) * 0.78, -0.75, 0.45);
-  hp += pulsesPitch(p, f, ctx.fps);
-  hy += pulsesYaw(p, f, ctx.fps);
-
-  const r1 = rotAxis(c.chestR, c.chestU, hy);
-  const f1 = rotAxis(c.chestF, c.chestU, hy);
-  const headF = rotAxis(f1, r1, hp);
-  const headU = rotAxis(c.chestU, r1, hp);
-  const headR = r1;
+  const dir = norm(add(mul(c.chestF, fl), add(mul(c.chestU, ul), mul(c.chestR, rl))));
+  let headF = c.chestF;
+  let headU = c.chestU;
+  const ax = cross(c.chestF, dir);
+  const sinT = len(ax);
+  if (sinT > 1e-6) {
+    const turn = Math.min(Math.atan2(sinT, dot(c.chestF, dir)) * 0.82, 1.3);
+    const axis = mul(ax, 1 / sinT);
+    headF = rotAxis(c.chestF, axis, turn);
+    headU = rotAxis(c.chestU, axis, turn);
+  }
+  /* nods and head-shakes on top: shakes about the chest's up, nods about the head's own right */
+  const py = pulsesYaw(p, f, ctx.fps);
+  headF = rotAxis(headF, c.chestU, py);
+  headU = rotAxis(headU, c.chestU, py);
+  const headR = norm(cross(headF, headU));
+  const pp = pulsesPitch(p, f, ctx.fps);
+  headF = rotAxis(headF, headR, pp);
+  headU = rotAxis(headU, headR, pp);
   const head = add(c.neck, mul(headU, P.headUp * k));
 
   return {
@@ -623,7 +683,7 @@ export function solveBody(p: PersonProg, f: number, ctx: Ctx): Body {
     elbow, wrist, hand, handAxes,
     grip: { L: p.grip.L.at(f), R: p.grip.R.at(f) },
     point: { L: p.point.L.at(f), R: p.point.R.at(f) },
-    face: { ...c.face, blink: blinkAt(p, f) }
+    face: { ...c.face, blink: Math.min(blinkAt(p, f), Math.max(0.05, p.eyes.at(f))) }
   };
 }
 
@@ -666,21 +726,64 @@ function gazeAt(p: PersonProg, c: Core, f: number, ctx: Ctx, own: Pick<Body, "wr
   let i = looks.length - 1;
   while (i >= 0 && looks[i].f0 > f) i--;
   const cur = i >= 0 ? looks[i] : null;
-  const B = lookPoint(p, c, cur ? cur.to : "default", f, ctx, own);
+  /*
+   * Gaze moves by direction, not by point. Sliding the look point in a
+   * straight line from one target to the next could pass right by the head
+   * or behind it, and the head then spun round in a frame; turning the
+   * direction instead sweeps the way a head does.
+   */
+  /* a target about to pass through the head (the doorway he is walking
+     through) has no direction worth following: settle on straight ahead */
+  const toward = (P: Vec3) => {
+    const v = sub(P, c.head0);
+    const L = len(v);
+    const d = L > 1e-6 ? mul(v, 1 / L) : c.chestF;
+    const near = clamp((0.7 - L) / 0.45);
+    return { d: near > 0 ? slerpDir(d, c.chestF, near * near * (3 - 2 * near), c.chestU) : d, L: Math.max(L, 0.5) };
+  };
+  const B = toward(lookPoint(p, c, cur ? cur.to : "default", f, ctx, own));
   let head = B;
   let eyes = B;
   if (cur) {
     const prev = i > 0 ? looks[i - 1].to : "default";
-    const A = lookPoint(p, c, prev, f, ctx, own);
+    const A = toward(lookPoint(p, c, prev, f, ctx, own));
     /* the eyes jump in a few frames; the head follows over the beat's duration */
-    eyes = lerp3(A, B, easeOut((f - cur.f0) / 4));
-    head = lerp3(A, B, mjerk((f - cur.f0) / Math.max(1, cur.dur)));
+    /* a wide look takes the head a moment longer than a small one */
+    const wide = Math.acos(clamp(dot(A.d, B.d), -1, 1));
+    const ee = easeOut((f - cur.f0) / Math.max(4, ctx.fps * 0.1 * wide));
+    const he = mjerk((f - cur.f0) / Math.max(1, cur.dur, ctx.fps * 0.3 * wide));
+    eyes = { d: slerpDir(A.d, B.d, ee, c.chestU), L: lerp(A.L, B.L, ee) };
+    head = { d: slerpDir(A.d, B.d, he, c.chestU), L: lerp(A.L, B.L, he) };
   }
+  /*
+   * Something behind them (the partner, once he has walked past) cannot be
+   * looked at, and following it round would snap the head from one shoulder
+   * to the other as it crossed. The further behind it is, the more the head
+   * settles on straight ahead instead.
+   */
+  const settle = (g: { d: Vec3; L: number }) => {
+    const back = dot(g.d, c.chestF);
+    const w = back < 0 ? Math.min(1, -back / 0.7) : 0;
+    const w2 = w * w * (3 - 2 * w);
+    return add(c.head0, mul(slerpDir(g.d, c.chestF, w2, c.chestU), g.L));
+  };
+  const headP = settle(head);
+  let eyesP = settle(eyes);
   /* a little restlessness in the eyes: nobody holds a point dead still */
   const t = f / ctx.fps;
-  const dd = len(sub(eyes, c.head0));
-  eyes = add(eyes, [0, 0.012 * dd * wobble(t * 2.3, p.seed + 1), 0.015 * dd * wobble(t * 1.9, p.seed + 2)]);
-  return { head, eyes };
+  const dd = len(sub(eyesP, c.head0));
+  eyesP = add(eyesP, [0, 0.012 * dd * wobble(t * 2.3, p.seed + 1), 0.015 * dd * wobble(t * 1.9, p.seed + 2)]);
+  return { head: headP, eyes: eyesP };
+}
+
+/** Turn unit vector a towards b by t; the long way round goes about `up`. */
+function slerpDir(a: Vec3, b: Vec3, t: number, up: Vec3): Vec3 {
+  const c = clamp(dot(a, b), -1, 1);
+  if (c > 0.9995) return norm(lerp3(a, b, t));
+  const th = Math.acos(c);
+  let axis = cross(a, b);
+  if (len(axis) < 1e-5) axis = up;
+  return norm(rotAxis(a, norm(axis), th * t));
 }
 
 function pulsesPitch(p: PersonProg, f: number, fps: number) {

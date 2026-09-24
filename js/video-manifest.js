@@ -13,7 +13,7 @@
  */
 
 export const VIDEO = {
-  "c001": { seconds: 49, lines: 12 },
+  "c001": { seconds: 70.46, lines: 12 },
   "c002": { seconds: 54.4, lines: 13 },
   "c003": { seconds: 52.87, lines: 13 },
   "c004": { seconds: 49.1, lines: 12 },
@@ -22,7 +22,7 @@ export const VIDEO = {
   "c007": { seconds: 48.33, lines: 12 },
   "c008": { seconds: 56.37, lines: 13 },
   "c009": { seconds: 48.03, lines: 12 },
-  "c010": { seconds: 82.79, lines: 13 },
+  "c010": { seconds: 78.29, lines: 13 },
   "c011": { seconds: 44.87, lines: 12 },
   "c012": { seconds: 45.1, lines: 12 },
   "c013": { seconds: 44.4, lines: 12 },
@@ -30,7 +30,7 @@ export const VIDEO = {
   "c015": { seconds: 50.13, lines: 13 },
   "c016": { seconds: 47.2, lines: 12 },
   "c017": { seconds: 47.67, lines: 13 },
-  "c018": { seconds: 48.13, lines: 13 },
+  "c018": { seconds: 80.19, lines: 13 },
   "c019": { seconds: 43.57, lines: 12 },
   "c020": { seconds: 46.1, lines: 13 },
   "c021": { seconds: 45.87, lines: 12 },

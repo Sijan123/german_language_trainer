@@ -580,6 +580,9 @@ first and landed in the second.
 
 ## 9. Acted films (3D)
 
+> The full process — scene file, every verb, camera, rooms, checking, traps —
+> is in **handoff_3d_video.md**. This section is the summary.
+
 c010 is the pilot for a second kind of film: the dialogue **acted out** by
 Sijan and Shruti with bodies, in a 3D room, doing the physical business the
 lines imply — he waits on a bench, is called, walks to the desk, sits, takes

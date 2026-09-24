@@ -10,7 +10,8 @@
     "align": "python scripts/align.py",
     "studio": "remotion studio src/index.ts",
     "film": "node scripts/render.mjs",
-    "sfx": "node scripts/make-sfx.mjs"
+    "sfx": "node scripts/make-sfx.mjs",
+    "cast": "node scripts/cast.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.0",

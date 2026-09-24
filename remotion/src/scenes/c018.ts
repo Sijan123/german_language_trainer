@@ -7,11 +7,16 @@
  */
 
 import type { Scene } from "../types";
+import { c018Acted } from "./c018.acted";
 
 export const c018: Scene = {
   id: "c018",
 
   call: false,
+
+  /* Played by people in a 3D bakery: see c018.acted.ts. Delete this line and
+     the film goes back to the drawn staging below, which is kept intact. */
+  acted: c018Acted,
 
   rooms: [
     { set: "baeckerei", from: 0, to: 1920 }

@@ -28,9 +28,10 @@ import type { ThoughtName } from "../components/ThoughtIcons";
 import { TitleCard, WortschatzCard } from "../components/Cards";
 import type { Dialogue, Scene } from "../types";
 import { SETS3D } from "./sets";
-import { compile } from "./timeline";
+import { compile, outfitAt } from "./timeline";
 import { World } from "./world";
 import { Person } from "./Person";
+import { Person3D } from "./Person3D";
 import { Prop } from "./Props";
 import { mouthAt } from "./visemes";
 import { cameraAt, project, projectBox, W, H, type CamPose } from "./camera";
@@ -150,9 +151,14 @@ export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dia
         />
         <directionalLight position={[-3, 2.5, 4]} intensity={0.35} />
         <Set state={setState} />
-        {bodies.map((b, i) => (
-          <Person key={names[i]} body={b} look={prog.people[names[i]].look} mouth={mouths[i]} />
-        ))}
+        {bodies.map((b, i) => {
+          const look = outfitAt(prog.people[names[i]], frame);
+          return look.model ? (
+            <Person3D key={names[i]} body={b} look={look} mouth={mouths[i]} />
+          ) : (
+            <Person key={names[i]} body={b} look={look} mouth={mouths[i]} />
+          );
+        })}
         {props.map((p) =>
           p.visible ? <Prop key={p.name} kind={p.kind} x={p.x} open={p.open} ink={p.ink} /> : null
         )}

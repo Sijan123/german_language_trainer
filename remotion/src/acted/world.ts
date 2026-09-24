@@ -47,7 +47,27 @@ const CARRY: Record<PropKind, Xform> = {
     const [bx, by, bz] = basis(dir, [0, 0, 1]);
     const centre = add(PEN_TIP, mul(dir, 0.07));
     return xbasis(centre, bx, by, bz);
-  })()
+  })(),
+  /* small things sit on the palm */
+  roll: { p: [0.075, 0.035, 0], q: QI },
+  loaf: { p: [0.09, 0.062, 0], q: QI },
+  slice: { p: [0.07, 0.03, 0], q: QI },
+  wallet: { p: [0.065, 0.014, 0], q: QI },
+  card: { p: [0.075, 0.006, 0], q: QI },
+  coins: { p: [0.06, 0.008, 0], q: QI },
+  /* a cake box on the flat of the hand */
+  box: { p: [0.07, 0.048, 0], q: QI },
+  /* a paper bag hangs from the fingers by its top: the bag's up is back along
+     the fingers, its width across the hand */
+  bag: xbasis([0.2, 0.0, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0]),
+  /* the flat */
+  clock: { p: [0.07, 0.07, 0], q: QI },
+  sandwich: { p: [0.07, 0.025, 0], q: QI },
+  lunchbox: { p: [0.07, 0.04, 0], q: QI },
+  /* a mug held round its body with the palm facing in: the mug's up is the
+     hand's z, which is up for a right hand held that way */
+  mug: xbasis([0.06, 0.045, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0]),
+  key: { p: [0.07, 0.006, 0], q: QI }
 };
 
 /** Prop sizes: long side, thickness, short side. */
@@ -56,7 +76,22 @@ export const PROP_SIZE: Record<PropKind, Vec3> = {
   folder: [0.32, 0.012, 0.235],
   sheet: [0.297, 0.0015, 0.21],
   form: [0.297, 0.0015, 0.21],
-  pen: [0.14, 0.011, 0.011]
+  pen: [0.14, 0.011, 0.011],
+  /* the bakery; for the upright bag, the middle number is its height */
+  roll: [0.095, 0.05, 0.065],
+  loaf: [0.25, 0.11, 0.12],
+  bag: [0.28, 0.24, 0.14],
+  box: [0.2, 0.085, 0.16],
+  slice: [0.11, 0.055, 0.075],
+  wallet: [0.11, 0.02, 0.09],
+  card: [0.085, 0.0012, 0.054],
+  coins: [0.07, 0.008, 0.05],
+  /* the flat; the clock and the mug stand up, so their middle number is height */
+  clock: [0.06, 0.13, 0.11],
+  sandwich: [0.11, 0.045, 0.1],
+  lunchbox: [0.19, 0.07, 0.13],
+  mug: [0.09, 0.1, 0.08],
+  key: [0.08, 0.006, 0.03]
 };
 
 export type PropState = { x: Xform; visible: boolean; open: number };
@@ -85,6 +120,12 @@ export class World {
         const { h } = self.holderAt(name, f);
         return "hand" in h.h ? [h.h.hand[0], h.h.hand[1], h.f] : null;
       },
+      rootHolder: (name, f) => {
+        let h = self.holderAt(name, f).h.h;
+        for (let n = 0; n < 8 && "inside" in h; n++) h = self.holderAt(h.inside, f).h.h;
+        return "hand" in h ? [h.hand[0], h.hand[1]] : null;
+      },
+      propVia: (name, f, who, side, x) => self.propVia(name, f, who, side, x),
       body: (name, f) => self.body(name, f),
       core: (name, f) => self.core(name, f)
     };
@@ -163,6 +204,30 @@ export class World {
     return xmul(b.hand[h.hand[1]], CARRY[kind]);
   }
 
+  /**
+   * Where a prop is this frame if the named hand is at `x` — for a hand
+   * reaching into something the same person's other hand is holding, while
+   * that body is still being solved. Follows the chain of `inside` down to
+   * the hand; blends are ignored, which only matters in the five frames after
+   * something is put in.
+   */
+  propVia(name: string, f: number, who: string, side: "L" | "R", x: Xform): Xform {
+    const { h } = this.holderAt(name, f);
+    const holder = h.h;
+    if ("inside" in holder) {
+      return xmul(this.propVia(holder.inside, f, who, side, x), { p: holder.off ?? [0, 0.004, 0], q: QI });
+    }
+    if ("hand" in holder && holder.hand[0] === who && holder.hand[1] === side) {
+      const before = this.prop(name, h.f - 1).x;
+      const handThen = this.body(who, h.f).hand[side];
+      const rel0 = xmul(xinv(handThen), before);
+      const kind = this.prog.props[name].kind;
+      const rel = holder.grip === "carry" ? xlerp(rel0, CARRY[kind], smooth((f - h.f) / Math.max(1, h.blend * 4))) : rel0;
+      return xmul(x, rel);
+    }
+    return this.prop(name, f).x;
+  }
+
   prop(name: string, f: number): PropState {
     const pr = this.prog.props[name];
     if (!pr) throw new Error(`no prop "${name}"`);
@@ -181,7 +246,7 @@ export class World {
         const kind = pr.kind;
         const rel =
           holder.grip === "carry"
-            ? xlerp(rel0, CARRY[kind], smooth((f - h.f) / Math.max(1, h.blend * 2)))
+            ? xlerp(rel0, CARRY[kind], smooth((f - h.f) / Math.max(1, h.blend * 4)))
             : rel0;
         const handNow = this.body(holder.hand[0], f).hand[holder.hand[1]];
         x = xmul(handNow, rel);
@@ -193,7 +258,11 @@ export class World {
       }
       this.propX.set(key, x);
     }
-    const hidden = "pocket" in holder && f >= h.f + h.blend && i > 0 ? true : "pocket" in holder && i === 0;
+    let hidden = "pocket" in holder && f >= h.f + h.blend && i > 0 ? true : "pocket" in holder && i === 0;
+    /* put somewhere out of sight: coins into the till's drawer */
+    if (!hidden && "spot" in holder && this.prog.set.spots[holder.spot]?.hidden && f >= h.f + h.blend) hidden = true;
+    /* inside something that is itself out of sight (a card in a wallet in a pocket) */
+    if (!hidden && "inside" in holder) hidden = !this.prop(holder.inside, f).visible;
     return { x, visible: !hidden, open: pr.open.at(f) };
   }
 
@@ -265,7 +334,8 @@ export class World {
       displayFlash: disp ? (f - disp.f < prog.fps * 1.4 ? (f - disp.f) / (prog.fps * 1.4) : 0) : 0,
       screen: scr ? scr.state : "list",
       screenProgress: scr ? clamp((f - scr.f) / Math.max(1, scr.dur)) : 0,
-      clock: 58.5 + f / prog.fps / 60
+      clock: 58.5 + f / prog.fps / 60,
+      values: Object.fromEntries(Object.entries(prog.values).map(([k, t]) => [k, t.at(f)]))
     };
   }
 }

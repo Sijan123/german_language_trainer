@@ -160,3 +160,60 @@ function highpass(x, hz) {
   lowpass(x, 8000);
   write("pen", x);
 }
+
+/* ---- a shop-door bell: a small brass bell on a spring, three bright hits */
+{
+  const x = secs(1.6);
+  const partials = [2093, 2637, 3520, 4186];
+  for (const [at, amp] of [[0, 1], [0.11, 0.6], [0.24, 0.35]]) {
+    for (let i = Math.round(at * RATE); i < x.length; i++) {
+      const t = i / RATE - at;
+      const env = Math.exp(-t * 4.2) * Math.min(1, t * 900);
+      let s = 0;
+      partials.forEach((hz, k) => (s += Math.sin(2 * Math.PI * hz * (1 + 0.003 * k) * t) / (k + 1)));
+      x[i] += amp * env * s;
+    }
+  }
+  write("bell", x);
+}
+
+/* ---- the bread slicer: a motor spinning up, a steady hum with the blade's
+   rasp through the crust, spinning down */
+{
+  const x = secs(2.4);
+  for (let i = 0; i < x.length; i++) {
+    const t = i / RATE;
+    const env = Math.min(1, t / 0.25) * Math.min(1, (2.4 - t) / 0.35);
+    const hum = Math.sin(2 * Math.PI * 100 * t) + 0.5 * Math.sin(2 * Math.PI * 200 * t) + 0.25 * Math.sin(2 * Math.PI * 300 * t);
+    const rasp = noise() * (0.5 + 0.5 * Math.sin(2 * Math.PI * 7 * t)) * (t > 0.4 && t < 2.0 ? 1 : 0.15);
+    x[i] = env * (0.35 * hum + 0.5 * rasp);
+  }
+  lowpass(x, 3500);
+  write("slicer", x);
+}
+
+/* ---- the till: the drawer's clunk and a bright bell */
+{
+  const x = secs(1.4);
+  for (let i = 0; i < x.length; i++) {
+    const t = i / RATE;
+    x[i] += Math.sin(2 * Math.PI * 90 * t) * Math.exp(-t * 30) * 0.8 + noise() * Math.exp(-t * 60) * 0.4;
+    const b = t - 0.05;
+    if (b > 0) x[i] += 0.5 * Math.exp(-b * 3.5) * (Math.sin(2 * Math.PI * 2600 * b) + 0.4 * Math.sin(2 * Math.PI * 3900 * b));
+  }
+  write("till", x);
+}
+
+/* ---- coins put down on a dish: a few small metallic clinks */
+{
+  const x = secs(0.7);
+  for (const [at, hz] of [[0, 4100], [0.07, 5200], [0.16, 4600], [0.23, 6100], [0.3, 4900]]) {
+    for (let i = Math.round(at * RATE); i < x.length; i++) {
+      const t = i / RATE - at;
+      const env = Math.exp(-t * 28) * Math.min(1, t * 2000);
+      x[i] += env * (Math.sin(2 * Math.PI * hz * t) + 0.6 * Math.sin(2 * Math.PI * hz * 1.51 * t));
+    }
+  }
+  highpass(x, 1500);
+  write("coins", x);
+}

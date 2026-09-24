@@ -92,6 +92,28 @@ export type PathSeg = {
   steps: number;
 };
 
+/*
+ * A walk's corners, rounded. A path written as a few points turns sharply at
+ * each one, and the body swung round and the arms whipped with it; cutting
+ * the corners a few times (Chaikin) makes a curve that still starts and ends
+ * on the written points.
+ */
+function rounded(pts: [number, number][]): [number, number][] {
+  let out = pts;
+  for (let it = 0; it < 3 && out.length > 2; it++) {
+    const next: [number, number][] = [out[0]];
+    for (let i = 0; i + 1 < out.length; i++) {
+      const [ax, az] = out[i];
+      const [bx, bz] = out[i + 1];
+      if (i > 0) next.push([0.75 * ax + 0.25 * bx, 0.75 * az + 0.25 * bz]);
+      if (i < out.length - 2) next.push([0.25 * ax + 0.75 * bx, 0.25 * az + 0.75 * bz]);
+    }
+    next.push(out[out.length - 1]);
+    out = next;
+  }
+  return out;
+}
+
 function makePath(f0: number, f1: number, pts: [number, number][], opts: {
   gait: boolean; faceTravel: boolean; face: number; ramp: number;
 }): PathSeg {
@@ -192,6 +214,9 @@ export type PersonProg = {
   smile: NumTrack;
   brows: NumTrack;
   jacket: NumTrack;
+  eyes: NumTrack;
+  /** the look from each frame on: the first is the scene's, then any changes */
+  outfits: { f: number; look: Look3D }[];
   blinks: number[];
   speech: Speech[];
 };
@@ -211,6 +236,7 @@ export type Program = {
   chairs: Record<string, { x: NumTrack; z: NumTrack; yaw: NumTrack }>;
   screen: { f: number; state: string; dur: number }[];
   display: { f: number; text: string }[];
+  values: Record<string, NumTrack>;
   sounds: { f: number; name: string; volume: number; frames?: number }[];
   shots: { f: number; shot: Shot3D }[];
 };
@@ -223,9 +249,9 @@ export type Program = {
    that wants a slower sit or a quicker glance says so. */
 const DUR: Record<string, number> = {
   step: 0.8, turn: 0.5, sit: 1.15, stand: 1.05, scoot: 0.5, lean: 0.6, twist: 0.6,
-  look: 0.32, nod: 0.75, shake: 0.8, smile: 0.4, brows: 0.25,
+  look: 0.32, nod: 0.75, shake: 0.8, smile: 0.4, brows: 0.25, eyes: 0.25,
   reach: 0.7, rest: 0.6, gesture: 1.3, jacket: 0.35, open: 0.55, chair: 0.7,
-  screen: 0.9, take: 0, put: 0, stow: 0, display: 0, sound: 0, type: 1, scribble: 1, tap: 0.6
+  screen: 0.9, take: 0, put: 0, stow: 0, display: 0, sound: 0, type: 1, scribble: 1, tap: 0.6, room: 0.4
 };
 
 /* ------------------------------------------------------------------ */
@@ -233,6 +259,13 @@ const DUR: Record<string, number> = {
 /* ------------------------------------------------------------------ */
 
 const bare = (w: string) => w.replace(/[.,!?;:„“"'»«]/g, "").toLowerCase();
+
+/** What someone is wearing at frame f. */
+export function outfitAt(p: PersonProg, f: number): Look3D {
+  let look = p.outfits[0].look;
+  for (const o of p.outfits) if (o.f <= f) look = o.look;
+  return look;
+}
 
 export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
   const fps = d.fps;
@@ -310,6 +343,8 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
       smile: new NumTrack(0.15),
       brows: new NumTrack(0),
       jacket: new NumTrack(0),
+      eyes: new NumTrack(1),
+      outfits: [{ f: -1e9, look }],
       blinks: [],
       speech
     };
@@ -327,6 +362,7 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
 
   const screen: Program["screen"] = [];
   const display: Program["display"] = [];
+  const values: Program["values"] = {};
   const sounds: Program["sounds"] = [];
 
   /** Where a person's feet are at frame f, per the paths written so far. */
@@ -346,10 +382,20 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
     p.path.push(seg);
   }
 
+  /* ------------------------------------------------------- changes of clothes */
+  for (const [name, c] of Object.entries(acted.cast)) {
+    for (const ch of c.changes ?? []) {
+      const p = people[name];
+      const prev = p.outfits[p.outfits.length - 1].look;
+      p.outfits.push({ f: cue(ch.at), look: { ...prev, ...ch.look } });
+    }
+    people[name].outfits.sort((a, b) => a.f - b.f);
+  }
+
   /* ------------------------------------------------------- the beats */
   for (const b of acted.beats) {
     const p = people[b.who];
-    if (!p && !["screen", "display", "sound", "chair"].includes(b.do)) {
+    if (!p && !["screen", "display", "sound", "chair", "room"].includes(b.do)) {
       throw new Error(`acted beat: nobody called "${b.who}"`);
     }
     const f0 = cue(b.at);
@@ -359,9 +405,10 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
     switch (b.do) {
       case "walk": {
         const from = posAt(p, f0);
-        const pts: [number, number][] = [from, ...b.path];
+        const pts: [number, number][] = rounded([from, ...b.path]);
         let D = 0;
         for (let i = 1; i < pts.length; i++) D += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+        if (D < 0.01) break;
         const speed = b.speed ?? 1.1;
         f1 = f0 + sec(D / speed + 0.5);
         const last = pts[pts.length - 1];
@@ -373,6 +420,8 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
       }
       case "step": {
         const from = posAt(p, f0);
+        /* already there: nothing to step (a zero-length path has no stride) */
+        if (Math.hypot(b.to[0] - from[0], b.to[1] - from[1]) < 0.01) break;
         const face = p.yaw.at(f0);
         addPath(p, makePath(f0, f1, [from, b.to], { gait: true, faceTravel: false, face, ramp: Math.round((f1 - f0) / 2) }));
         break;
@@ -431,6 +480,9 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
         break;
       case "brows":
         p.brows.moveTo(f0, f1, b.amount);
+        break;
+      case "eyes":
+        p.eyes.moveTo(f0, f1, b.open);
         break;
 
       case "reach": {
@@ -502,14 +554,15 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
         const pr = props[b.prop];
         pr.holders = pr.holders.filter((h) => h.f < f0);
         pr.holders.push({ f: f0, h: { hand: [b.who, b.hand], grip: b.grip ?? "keep" }, blend: 5 });
-        if (pr.kind !== "pen") sounds.push({ f: f0, name: "paper", volume: 0.3 });
         break;
       }
       case "put": {
         const pr = props[b.prop];
+        if (!pr) throw new Error(`acted beat: no prop "${b.prop}"`);
+        if (b.into && !props[b.into]) throw new Error(`acted beat: no prop "${b.into}" to put ${b.prop} into`);
+        if (!b.into && !b.spot) throw new Error(`acted beat: put ${b.prop} needs a spot or into`);
         pr.holders = pr.holders.filter((h) => h.f < f0);
-        pr.holders.push({ f: f0, h: { spot: b.spot }, blend: b.blend ?? 5 });
-        if (pr.kind !== "pen") sounds.push({ f: f0, name: "paper", volume: 0.22 });
+        pr.holders.push({ f: f0, h: b.into ? { inside: b.into, off: b.off } : { spot: b.spot! }, blend: b.blend ?? 5 });
         break;
       }
       case "stow": {
@@ -537,30 +590,18 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
         display.push({ f: f0, text: b.text });
         break;
       case "sound":
-        sounds.push({ f: f0, name: b.name, volume: b.volume ?? 0.5 });
+        sounds.push({ f: f0, name: b.name, volume: b.volume ?? 0.5, frames: b.dur ? sec(b.dur) : undefined });
         break;
+      case "room": {
+        const t = (values[b.name] ??= new NumTrack(0));
+        t.moveTo(f0, f1, b.value);
+        break;
+      }
     }
     if (b.id) ends[b.id] = f1;
   }
 
-  /* ------------------------------------------------------- footsteps */
-  /* One per footfall, read off the gait the same way the feet are placed,
-     so a step you hear is a foot you see land. */
-  for (const p of Object.values(people)) {
-    for (const seg of p.path) {
-      if (!seg.gait) continue;
-      const falls: number[] = [];
-      for (let k = 1; k <= seg.steps; k++) falls.push(k * seg.step - 0.35 * seg.step);
-      falls.push(seg.D);
-      let fi = 0;
-      for (let f = seg.f0; f <= seg.f1 && fi < falls.length; f++) {
-        if (pathDist(seg, f) >= falls[fi] - 1e-6) {
-          sounds.push({ f, name: "step", volume: fi === falls.length - 1 ? 0.18 : 0.3 });
-          fi++;
-        }
-      }
-    }
-  }
+  /* No footstep sounds: the user asked for them to go (2026-09-24). */
 
   /* ------------------------------------------------------- living */
   /*
@@ -605,5 +646,5 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
   /* ------------------------------------------------------- shots */
   const shots = acted.shots.map((shot) => ({ f: cue(shot.at), shot })).sort((a, b) => a.f - b.f);
 
-  return { fps, duration: total, set, people, props, chairs, screen, display, sounds, shots };
+  return { fps, duration: total, set, people, props, chairs, screen, display, values, sounds, shots };
 }

@@ -284,31 +284,12 @@ const master = (at: Shot3D["at"], extra: Partial<Shot3D> = {}): Shot3D => ({
 });
 
 const shots: Shot3D[] = [
-  /* the room, with him waiting on the bench */
+  /* The camera moves only when it has to (the user's direction, 2026-09-24):
+     the room with him on the bench, a glide into the master as he walks to
+     the desk, the master for the whole conversation, and a pan as he leaves. */
   { at: { t: 0 }, pos: [-1.35, 1.6, 6.2], look: [-1.45, 1.05, -0.55], fov: 38, to: { pos: [-1.2, 1.55, 5.9] } },
-  /* following him to the desk and settling into the master */
-  master({ gap: 0, plus: 4.6 }, { glide: 1.4 }),
-  /* her screen as she finds him */
-  { at: { line: 2, word: "Namen" }, pos: [1.2, 1.4, 0.05], look: [0.05, 1.07, -0.46], fov: 30, to: { pos: [1.12, 1.38, 0.0] } },
-  master({ gap: 3, plus: 0.8 }),
-  /* the inside pocket */
-  { at: { line: 3, end: true, plus: -0.1 }, pos: [0.3, 1.18, 1.25], look: [-0.64, 1.02, -0.02], fov: 30, to: { pos: [0.25, 1.16, 1.2] } },
-  /* the passport crossing the desk */
-  { at: { line: 4, plus: -0.3 }, pos: [0.0, 1.06, 2.05], look: [-0.02, 0.98, 0.05], fov: 32, to: { pos: [0.0, 1.05, 1.9] } },
-  /* her, checking it against him */
-  { at: { gap: 5, plus: -0.4 }, pos: [-0.62, 1.3, 1.55], look: [0.72, 1.12, -0.05], fov: 29 },
-  master({ gap: 5, plus: 3.9 }),
-  /* over his shoulder for her question, over hers for his answer */
-  { at: { line: 7 }, pos: [-1.55, 1.42, 0.95], look: [0.66, 1.15, -0.05], fov: 27 },
-  { at: { line: 8 }, pos: [1.55, 1.42, 0.95], look: [-0.7, 1.12, -0.05], fov: 27 },
-  master({ line: 9 }),
-  /* the form, from above his shoulder */
-  { at: { gap: 10, plus: 0.2 }, pos: [-0.02, 1.45, 0.85], look: [-0.2, 0.68, 0.02], fov: 34, to: { pos: [-0.03, 1.4, 0.8] } },
-  /* back to the room on "kommt", so the thought about the post has her head
-     to sit on; he finishes signing in the wide */
-  master({ line: 11, word: "kommt" }),
-  /* and out, the way he came */
-  { at: { line: 12, end: true, plus: 4.2 }, pos: [-1.3, 1.55, 5.9], look: [-1.3, 1.05, -0.35], fov: 36, glide: 1.2, track: S, follow: 0.45 }
+  master({ gap: 0, plus: 4.6 }, { glide: 1.6 }),
+  { at: { line: 12, end: true, plus: 4.2 }, pos: [-1.3, 1.55, 5.9], look: [-1.3, 1.05, -0.35], fov: 36, glide: 1.6, track: S, follow: 0.45 }
 ];
 
 /* ------------------------------------------------------------------ */
@@ -319,6 +300,7 @@ export const c010Acted: Acted = {
     Sijan: {
       look: {
         height: 1.76,
+        model: "sijan",
         skin: "#b9805a",
         skinShade: "#9d6741",
         hair: "#241b17",
@@ -336,6 +318,7 @@ export const c010Acted: Acted = {
     Shruti: {
       look: {
         height: 1.66,
+        model: "shruti",
         skin: "#c48b64",
         skinShade: "#a97148",
         hair: "#40291f",
@@ -353,7 +336,7 @@ export const c010Acted: Acted = {
   },
   /* seconds of silence before each line, for the business that takes longer
      to do than to say; see the synopsis at the top */
-  gaps: { 0: 5.3, 1: 3.7, 3: 1.4, 4: 1.7, 5: 3.9, 7: 1.9, 9: 1.2, 10: 3.8, 12: 1.9 },
+  gaps: { 0: 4.8, 1: 3.2, 3: 0.9, 4: 1.2, 5: 3.4, 7: 1.4, 9: 0.7, 10: 3.3, 12: 1.4 },
   /* long enough for him to be out of the door before the Wortschatz card */
   tail: 9.0,
   props: {

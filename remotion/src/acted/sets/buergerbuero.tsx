@@ -109,7 +109,7 @@ const MODELS = [
  * The number display and the monitor are the two surfaces in the room that
  * carry words, and both have to be legible in a close-up.
  */
-function useCanvasTexture(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, key: string) {
+export function useCanvasTexture(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, key: string) {
   const { canvas, tex } = useMemo(() => {
     const cv = document.createElement("canvas");
     cv.width = w;

@@ -113,6 +113,8 @@ export type Beat = BeatBase & (
   | { do: "shake"; times?: number; dur?: number }
   | { do: "smile"; amount: number; dur?: number }
   | { do: "brows"; amount: number; dur?: number }
+  /** eyes shut (0) or open (1), for someone dozing; blinks still happen when open */
+  | { do: "eyes"; open: number; dur?: number }
 
   /* hands */
   | {
@@ -152,7 +154,11 @@ export type Beat = BeatBase & (
    * thing up to take it somewhere.
    */
   | { do: "take"; prop: string; hand: "L" | "R"; grip?: "keep" | "carry" }
-  | { do: "put"; prop: string; spot: string; blend?: number }
+  /**
+   * Down onto a set spot, or into another prop (`into`: a roll into a bag,
+   * a card into a wallet), `off` from that prop's middle in its own frame.
+   */
+  | { do: "put"; prop: string; spot?: string; into?: string; off?: Vec3; blend?: number }
   /** into a pocket: `into` is the person whose jacket it goes in */
   | { do: "stow"; prop: string; into: string }
   | { do: "open"; prop: string; amount: number; dur?: number }
@@ -161,7 +167,13 @@ export type Beat = BeatBase & (
   | { do: "chair"; chair: string; to: [number, number]; yaw?: number; dur?: number }
   | { do: "screen"; state: string; dur?: number }
   | { do: "display"; text: string }
-  | { do: "sound"; name: string; volume?: number }
+  | { do: "sound"; name: string; volume?: number; dur?: number }
+  /**
+   * Anything else in the room that moves by degrees — a till drawer, a bread
+   * slicer running — as a named value the set reads (SetState.values),
+   * eased from where it is to `value` over `dur`.
+   */
+  | { do: "room"; name: string; value: number; dur?: number }
 );
 
 /* ------------------------------------------------------------------ */
@@ -213,6 +225,13 @@ export type Look3D = {
   shoes: string;
   /** an ID on a lanyard, which is how you know who works here */
   lanyard?: boolean;
+  /**
+   * A rigged model from public/models/cast/<model>.glb (built by
+   * blender/cast.py) instead of the shapes Person.tsx draws. The colours
+   * above still apply; the model's build, hair, beard, jacket and lanyard
+   * are its own, so they should agree with the fields above.
+   */
+  model?: string;
 };
 
 export type Start = {
@@ -247,12 +266,25 @@ export type Holder =
   | { pocket: string }
   | { inside: string; off?: Vec3 };
 
-export type PropKind = "passport" | "folder" | "sheet" | "form" | "pen";
+export type PropKind =
+  | "passport" | "folder" | "sheet" | "form" | "pen"
+  /* the bakery */
+  | "roll" | "loaf" | "bag" | "box" | "slice" | "wallet" | "card" | "coins"
+  /* the flat */
+  | "clock" | "sandwich" | "lunchbox" | "mug" | "key";
 
 export type Acted = {
   /** a key of SETS3D in acted/sets */
   set: string;
-  cast: Record<string, { look: Look3D; start: Start }>;
+  cast: Record<string, {
+    look: Look3D;
+    start: Start;
+    /**
+     * A change of clothes (colours only: the model stays the same), from
+     * the cue on. Do it while the person is out of shot.
+     */
+    changes?: { at: Cue; look: Partial<Look3D> }[];
+  }>;
   /**
    * Silence added before line i, in seconds: room for things that take
    * longer to do than to say. Line 0's gap sits between the title card and

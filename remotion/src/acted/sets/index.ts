@@ -10,6 +10,8 @@
 import type React from "react";
 import type { Vec3 } from "../types";
 import { Buergerbuero3D, buergerbueroLayout } from "./buergerbuero";
+import { Baeckerei3D, baeckereiLayout } from "./baeckerei";
+import { Wohnung3D, wohnungLayout } from "./wohnung";
 
 export type ChairDef = {
   /** seat centre on the floor plan */
@@ -25,7 +27,7 @@ export type ChairDef = {
 export type SetLayout = {
   chairs: Record<string, ChairDef>;
   /** named places on surfaces: where a thing is put down, where a hand goes */
-  spots: Record<string, { p: Vec3; yaw?: number }>;
+  spots: Record<string, { p: Vec3; yaw?: number; hidden?: boolean }>;
   /** named points for a gaze or a callout */
   anchors: Record<string, Vec3>;
 };
@@ -40,8 +42,12 @@ export type SetState = {
   screenProgress: number;
   /** minutes past nine on the wall clock */
   clock: number;
+  /** named room values set by the `room` verb (a drawer, a machine) */
+  values: Record<string, number>;
 };
 
 export const SETS3D: Record<string, { layout: SetLayout; Component: React.FC<{ state: SetState }> }> = {
-  buergerbuero: { layout: buergerbueroLayout, Component: Buergerbuero3D }
+  buergerbuero: { layout: buergerbueroLayout, Component: Buergerbuero3D },
+  baeckerei: { layout: baeckereiLayout, Component: Baeckerei3D },
+  wohnung: { layout: wohnungLayout, Component: Wohnung3D }
 };

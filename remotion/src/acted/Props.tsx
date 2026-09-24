@@ -15,6 +15,8 @@ import type { Ink } from "./world";
 import { PROP_SIZE } from "./world";
 import { toon } from "./models";
 import { quatFromBasis, type Xform } from "./math";
+import { Bag, CakeBox, Card, Coins, Loaf, Roll, Slice, Wallet } from "./BakeryProps";
+import { AlarmClock, Key, LunchBox, Mug, Sandwich } from "./FlatProps";
 import { theme } from "../theme";
 
 const FONT = "'IBM Plex Sans', system-ui, sans-serif";
@@ -262,6 +264,19 @@ export const Prop: React.FC<{ kind: PropKind; x: Xform; open: number; ink?: Ink 
     {kind === "sheet" ? <Page kind="sheet" /> : null}
     {kind === "form" ? <Page kind="form" ink={ink} /> : null}
     {kind === "pen" ? <Pen /> : null}
+    {kind === "roll" ? <Roll /> : null}
+    {kind === "loaf" ? <Loaf sliced={open} /> : null}
+    {kind === "bag" ? <Bag /> : null}
+    {kind === "box" ? <CakeBox open={open} /> : null}
+    {kind === "slice" ? <Slice /> : null}
+    {kind === "wallet" ? <Wallet open={open} /> : null}
+    {kind === "card" ? <Card /> : null}
+    {kind === "coins" ? <Coins /> : null}
+    {kind === "clock" ? <AlarmClock /> : null}
+    {kind === "sandwich" ? <Sandwich /> : null}
+    {kind === "lunchbox" ? <LunchBox open={open} /> : null}
+    {kind === "mug" ? <Mug /> : null}
+    {kind === "key" ? <Key /> : null}
   </group>
 );
 

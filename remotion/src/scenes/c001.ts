@@ -24,10 +24,15 @@
  */
 
 import type { Scene } from "../types";
+import { c001Acted } from "./c001.acted";
 
 export const c001: Scene = {
   id: "c001",
   call: false,
+
+  /* Played by people in a 3D flat: see c001.acted.ts. Delete this line and
+     the film goes back to the drawn staging below, which is kept intact. */
+  acted: c001Acted,
 
   rooms: [
     { set: "schlafzimmer", from: 0, to: 960 },
