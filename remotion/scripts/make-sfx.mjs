@@ -217,3 +217,23 @@ function highpass(x, hz) {
   highpass(x, 1500);
   write("coins", x);
 }
+
+/* ---- room tone: a quiet, even bed of low air and distant hum, to loop
+   under a whole film. Faded at both ends so the loop point does not click. */
+{
+  const x = secs(8);
+  for (let i = 0; i < x.length; i++) {
+    const t = i / RATE;
+    x[i] = noise() * 0.6 + 0.12 * Math.sin(2 * Math.PI * 50 * t) + 0.05 * Math.sin(2 * Math.PI * 100 * t);
+  }
+  lowpass(x, 420);
+  lowpass(x, 420);
+  highpass(x, 40);
+  const fade = Math.round(0.05 * RATE);
+  for (let i = 0; i < fade; i++) {
+    x[i] *= i / fade;
+    x[x.length - 1 - i] *= i / fade;
+  }
+  /* write() normalises to full scale; scale down after by the volume in the film */
+  write("roomtone", x);
+}

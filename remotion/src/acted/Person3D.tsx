@@ -32,7 +32,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { Body, Side } from "./rig";
 import type { Look3D, Vec3 } from "./types";
-import { toon } from "./models";
+import { toon, toonGradient } from "./models";
 import {
   add, basis, clamp, cross, dot, len, mul, norm, qaxis, qconj, qmul, qrot, quatFromBasis, sub,
   type Quat
@@ -42,7 +42,8 @@ type Mouth = { open: number; wide: number; round: number };
 
 /* how far the jaw drops for a fully open vowel, and the lids travel to shut */
 const JAW = 0.24;
-const LID = 1.42;
+/* far enough that no white shows through a shut eye, head down or not */
+const LID = 1.62;
 
 /* ------------------------------------------------------------------ */
 /* Loading                                                             */
@@ -101,7 +102,8 @@ function palette(look: Look3D): Record<string, string> {
     lining: j ? j.dark : look.topDark,
     lanyard: "#2f5d8a",
     card: "#f4f1ea",
-    cardStripe: "#2f5d8a"
+    cardStripe: "#2f5d8a",
+    earbud: "#f4f4f2"
   };
 }
 
@@ -267,11 +269,45 @@ function jointsOf(b: Body, mouth: Mouth): Joints {
 type Rig = {
   root: THREE.Group;
   bones: THREE.Bone[]; // parents before children
-  rest: Map<string, { q: Quat; p: Vec3; local: THREE.Vector3 }>;
+  rest: Map<string, { q: Quat; p: Vec3; local: THREE.Vector3; localQ: THREE.Quaternion }>;
   restBases: Record<string, Quat>;
   restLen: { spine1: number };
   morphs: THREE.Mesh[];
+  /** the model's bone name -> this file's name for it (the cast's are the same) */
+  mine: Map<string, string>;
+  /** a downloaded avatar rather than one of blender/cast.py's */
+  external: boolean;
+  /** how much the model is scaled to the look's height */
+  scale: number;
+  /** from the middle of the hips to the pelvis bone, at rest, in the rest frame */
+  pelvisOffset: Vec3;
 };
+
+/*
+ * Avatars from elsewhere (Avaturn, Mixamo, Ready Player Me) use the Mixamo
+ * names, sometimes with a "mixamorig" prefix. This is what each of our bones
+ * is called there; anything not listed (Spine1, the toes) just rides along
+ * with its parent. They have no jaw, eyes or lids, so those stay still.
+ */
+function mixamoNames(prefix: string): Record<string, string> {
+  const m: Record<string, string> = {
+    pelvis: "Hips", spine1: "Spine", spine2: "Spine2", neck: "Neck", head: "Head"
+  };
+  for (const [s, side] of [["L", "Left"], ["R", "Right"]] as const) {
+    m["clav_" + s] = side + "Shoulder";
+    m["upperarm_" + s] = side + "Arm";
+    m["forearm_" + s] = side + "ForeArm";
+    m["hand_" + s] = side + "Hand";
+    for (const f of ["thumb", "index", "middle", "ring", "pinky"]) {
+      for (const n of [1, 2, 3]) m[`${f}${n}_${s}`] = `${side}Hand${f[0].toUpperCase()}${f.slice(1)}${n}`;
+    }
+    m["thigh_" + s] = side + "UpLeg";
+    m["shin_" + s] = side + "Leg";
+    m["foot_" + s] = side + "Foot";
+  }
+  for (const key of Object.keys(m)) m[key] = prefix + m[key];
+  return m;
+}
 
 function prepare(scene: THREE.Group, look: Look3D): Rig {
   const root = cloneSkinned(scene) as THREE.Group;
@@ -281,10 +317,15 @@ function prepare(scene: THREE.Group, look: Look3D): Rig {
     const mesh = o as THREE.SkinnedMesh;
     if (!mesh.isMesh) return;
     const paint = (m: THREE.Material) => {
+      /* a textured avatar keeps its texture, shaded in the same three bands */
+      const std = m as THREE.MeshStandardMaterial;
+      if (std.map) {
+        return new THREE.MeshToonMaterial({ map: std.map, gradientMap: toonGradient(), side: THREE.DoubleSide });
+      }
       const c = colours[m.name];
       if (!c) throw new Error(`cast model: no colour for material "${m.name}"`);
-      /* the jacket's lining and the lanyard are seen from both sides */
-      const twoSided = /^(lanyard|card|cardStripe)$/.test(m.name);
+      /* the jacket's lining, the lanyard and single-skinned clothes are seen from both sides */
+      const twoSided = /^(lanyard|card|cardStripe|jacket|top|trousers|lining)$/.test(m.name);
       return toon(c, twoSided ? { side: THREE.DoubleSide } : {});
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(paint) : paint(mesh.material);
@@ -298,27 +339,57 @@ function prepare(scene: THREE.Group, look: Look3D): Rig {
   root.traverse((o) => {
     if ((o as THREE.Bone).isBone) bones.push(o as THREE.Bone);
   });
-  const rest = new Map<string, { q: Quat; p: Vec3; local: THREE.Vector3 }>();
+
+  /* whose names: ours, or Mixamo's (with any prefix) */
+  const ownCast = bones.some((b) => b.name === "pelvis");
+  const hips = ownCast ? undefined : bones.find((b) => /Hips$/.test(b.name));
+  const external = !!hips;
+  const theirs: Record<string, string> = external ? mixamoNames(hips!.name.slice(0, -"Hips".length)) : {};
+  const mine = new Map<string, string>();
+  if (external) {
+    for (const [ours, t] of Object.entries(theirs)) mine.set(t, ours);
+  } else {
+    for (const b of bones) mine.set(b.name, b.name);
+  }
+
+  const rest = new Map<string, { q: Quat; p: Vec3; local: THREE.Vector3; localQ: THREE.Quaternion }>();
   const p = new THREE.Vector3();
   const q = new THREE.Quaternion();
   const s = new THREE.Vector3();
   for (const b of bones) {
     b.matrixWorld.decompose(p, q, s);
-    rest.set(b.name, { q: [q.x, q.y, q.z, q.w], p: [p.x, p.y, p.z], local: b.position.clone() });
+    rest.set(b.name, { q: [q.x, q.y, q.z, q.w], p: [p.x, p.y, p.z], local: b.position.clone(), localQ: b.quaternion.clone() });
   }
+  const theirName = (n: string) => (external ? theirs[n] ?? n : n);
+  const has = (n: string) => rest.has(theirName(n));
   const at = (n: string): Vec3 => {
-    const r = rest.get(n);
+    const r = rest.get(theirName(n));
     if (!r) throw new Error(`cast model: no bone "${n}"`);
     return r.p;
   };
 
-  /* the rest pose as Joints: facing +x, upright, hands as the builder made them */
-  const F: Vec3 = [1, 0, 0];
-  const R: Vec3 = [0, 0, 1];
+  /* the rest pose as Joints. The cast faces +x; anything else is read off the
+     skeleton: right is from the left hip to the right, forward is square to
+     it, and a hand's axes come from its knuckles. */
+  let F: Vec3 = [1, 0, 0];
+  let R: Vec3 = [0, 0, 1];
+  if (external) {
+    const r = sub(at("thigh_R"), at("thigh_L"));
+    R = norm([r[0], 0, r[2]]);
+    F = cross(Y, R);
+  }
   const handRest = (sd: Side) => {
-    const x = norm(sub(at("hand_" + sd), at("forearm_" + sd)));
-    const y = norm(sd === "R" ? cross(F, x) : cross(x, F));
-    return { x, y, z: cross(x, y) };
+    if (!external || !has("index1_" + sd) || !has("pinky1_" + sd) || !has("middle1_" + sd)) {
+      const x = norm(sub(at("hand_" + sd), at("forearm_" + sd)));
+      const y = norm(sd === "R" ? cross(F, x) : cross(x, F));
+      return { x, y, z: cross(x, y) };
+    }
+    const x = norm(sub(at("middle1_" + sd), at("hand_" + sd)));
+    /* across the knuckles, towards the thumb: +z on a right hand, -z on a left */
+    const across = sub(at("index1_" + sd), at("pinky1_" + sd));
+    const z0 = norm(sub(across, mul(x, dot(across, x))));
+    const z = sd === "R" ? z0 : mul(z0, -1);
+    return { x, y: cross(z, x), z };
   };
   const two = <T,>(f: (sd: Side) => T): Record<Side, T> => ({ L: f("L"), R: f("R") });
   const restJ: Joints = {
@@ -336,11 +407,24 @@ function prepare(scene: THREE.Group, look: Look3D): Rig {
     eyes: F, jaw: 0, blink: 1, jacket: 0,
     grip: two(() => 0), point: two(() => 0)
   };
+
+  /* an avatar is scaled to the look's height by its own height; the cast is
+     built at 1.76 m, the rig's own size */
+  let scale = look.height / 1.76;
+  let pelvisOffset: Vec3 = [0, 0, 0];
+  if (external) {
+    const box = new THREE.Box3().setFromObject(root);
+    scale = look.height / Math.max(0.5, box.max.y - box.min.y);
+    const mid = mul(add(at("thigh_L"), at("thigh_R")), 0.5);
+    const d = sub(at("pelvis"), mid);
+    /* in the rest frame: forward, up, right */
+    pelvisOffset = [dot(d, F), dot(d, Y), dot(d, R)];
+  }
   return {
     root, bones, rest,
     restBases: bases(restJ),
-    restLen: { spine1: len(sub(at("spine2"), at("spine1"))) },
-    morphs
+    restLen: { spine1: has("spine2") && has("spine1") ? len(sub(at("spine2"), at("spine1"))) : 0 },
+    morphs, mine, external, scale, pelvisOffset
   };
 }
 
@@ -358,18 +442,24 @@ function pose(rig: Rig, b: Body, mouth: Mouth) {
   const j = jointsOf(b, mouth);
   const target = bases(j);
   const k = b.k;
+  const sc = rig.external ? rig.scale : k;
 
   /* where the rig says the joints are; everything else rides its parent */
-  const spine1Q = target.spine1;
-  const place: Record<string, Vec3> = {
-    pelvis: b.pelvis,
-    spine1: b.pelvis,
-    spine2: add(b.pelvis, mul(qrot(spine1Q, [0, 1, 0]), rig.restLen.spine1 * k)),
-    neck: b.chestTop,
-    head: b.neck
-  };
+  const place: Record<string, Vec3> = {};
+  if (rig.external) {
+    /* the pelvis bone sits a little above the hip joints: carry that offset
+       round with the hips */
+    const o = rig.pelvisOffset;
+    place.pelvis = add(b.pelvis, add(mul(b.hipF, o[0] * sc), add(mul(Y, o[1] * sc), mul(b.hipR, o[2] * sc))));
+  } else {
+    place.pelvis = b.pelvis;
+    place.spine1 = b.pelvis;
+    place.spine2 = add(b.pelvis, mul(qrot(target.spine1, [0, 1, 0]), rig.restLen.spine1 * k));
+    place.neck = b.chestTop;
+    place.head = b.neck;
+  }
   for (const s of ["L", "R"] as const) {
-    place["clav_" + s] = b.chestTop;
+    if (!rig.external) place["clav_" + s] = b.chestTop;
     place["upperarm_" + s] = b.shoulder[s];
     place["forearm_" + s] = b.elbow[s];
     place["hand_" + s] = b.wrist[s];
@@ -381,19 +471,29 @@ function pose(rig: Rig, b: Body, mouth: Mouth) {
   rig.root.updateMatrixWorld(true);
   for (const bone of rig.bones) {
     const rest = rig.rest.get(bone.name)!;
-    const tb = target[bone.name];
-    const rb = rig.restBases[bone.name];
+    const ours = rig.mine.get(bone.name);
+    const parent = bone.parent!;
+    if (!ours) {
+      /* a bone we have no say over: its rest pose relative to its parent */
+      bone.position.copy(rest.local);
+      bone.quaternion.copy(rest.localQ);
+      bone.scale.set(1, 1, 1);
+      bone.updateMatrix();
+      bone.matrixWorld.multiplyMatrices(parent.matrixWorld, bone.matrix);
+      continue;
+    }
+    const tb = target[ours];
+    const rb = rig.restBases[ours];
     /* the turn that carries the rest basis onto this frame's, applied to the bone */
     const wq = tb && rb ? qmul(qmul(tb, qconj(rb)), rest.q) : rest.q;
-    const parent = bone.parent!;
     let wp: Vec3;
-    if (place[bone.name]) {
-      wp = place[bone.name];
+    if (place[ours]) {
+      wp = place[ours];
     } else {
       _p.copy(rest.local).applyMatrix4(parent.matrixWorld);
       wp = [_p.x, _p.y, _p.z];
     }
-    _m.compose(_p.set(...wp), _q.set(...wq), _s.set(k, k, k));
+    _m.compose(_p.set(...wp), _q.set(...wq), _s.set(sc, sc, sc));
     _inv.copy(parent.matrixWorld).invert();
     _m.premultiply(_inv);
     _m.decompose(bone.position, bone.quaternion, bone.scale);
@@ -411,7 +511,7 @@ function pose(rig: Rig, b: Body, mouth: Mouth) {
   for (const m of rig.morphs) {
     const dict = m.morphTargetDictionary!;
     const inf = m.morphTargetInfluences!;
-    for (const [name, i] of Object.entries(dict)) inf[i] = keys[name] ?? 0;
+    for (const [name, n] of Object.entries(dict)) inf[n] = keys[name] ?? 0;
   }
 }
 

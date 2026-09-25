@@ -12,6 +12,7 @@ import type { Vec3 } from "../types";
 import { Buergerbuero3D, buergerbueroLayout } from "./buergerbuero";
 import { Baeckerei3D, baeckereiLayout } from "./baeckerei";
 import { Wohnung3D, wohnungLayout } from "./wohnung";
+import { Telefon3D, telefonLayout } from "./telefon";
 
 export type ChairDef = {
   /** seat centre on the floor plan */
@@ -49,5 +50,6 @@ export type SetState = {
 export const SETS3D: Record<string, { layout: SetLayout; Component: React.FC<{ state: SetState }> }> = {
   buergerbuero: { layout: buergerbueroLayout, Component: Buergerbuero3D },
   baeckerei: { layout: baeckereiLayout, Component: Baeckerei3D },
-  wohnung: { layout: wohnungLayout, Component: Wohnung3D }
+  wohnung: { layout: wohnungLayout, Component: Wohnung3D },
+  telefon: { layout: telefonLayout, Component: Telefon3D }
 };

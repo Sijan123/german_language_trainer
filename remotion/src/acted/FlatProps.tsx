@@ -157,12 +157,12 @@ export const Mug: React.FC = () => {
   );
 };
 
-/** A flat key on a ring, with a small leather tag. */
+/** A flat key on a ring, with a bright red tag so it reads at a distance. */
 export const Key: React.FC = () => {
   const [L] = PROP_SIZE.key;
-  const brass = toon("#c9a54a");
+  const brass = toon("#d8b24e");
   return (
-    <group>
+    <group scale={1.35}>
       {/* the bow */}
       <mesh position={[-L / 2 + 0.012, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
         <torusGeometry args={[0.009, 0.0035, 8, 18]} />
@@ -174,7 +174,7 @@ export const Key: React.FC = () => {
         <mesh key={i} geometry={BOX} material={brass} position={[0.01 + i * 0.008, 0, 0.005]} scale={[0.004, 0.003, 0.004]} />
       ))}
       {/* the tag on the ring */}
-      <mesh geometry={BOX} material={toon("#7a4a2c")} position={[-L / 2 - 0.004, -0.001, -0.012]} rotation={[0, 0.5, 0]} scale={[0.022, 0.003, 0.014]} castShadow />
+      <mesh geometry={BOX} material={toon("#c0433a")} position={[-L / 2 + 0.004, -0.001, -0.014]} rotation={[0, 0.5, 0]} scale={[0.026, 0.004, 0.017]} castShadow />
     </group>
   );
 };

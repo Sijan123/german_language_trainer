@@ -27,11 +27,21 @@ type Props = {
   to: number;
   /** push the tag to the other side when the box is near the frame edge */
   side: "above" | "below";
+  /**
+   * Screen boxes the tag must stay off — the acted films pass the people's
+   * heads and the subtitle card, because a label over a face hides the face
+   * the learner is watching. Without it the tag goes where `side` says, as it
+   * always has in the drawn films.
+   */
+  avoid?: Anchor[];
 };
 
 const PAD = 14;
 
-export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
+const overlaps = (a: Anchor, b: Anchor, m: number) =>
+  a.x < b.x + b.w + m && a.x + a.w > b.x - m && a.y < b.y + b.h + m && a.y + a.h > b.y - m;
+
+export const Callout: React.FC<Props> = ({ box, label, from, to, side, avoid }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -56,25 +66,67 @@ export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
   const w = box.w + PAD * 2;
   const h = box.h + PAD * 2;
 
-  /* The arrow comes in from whichever side the tag is on and stops short of
-     the ring. */
-  const arrowLen = 62;
-  const tagH = 54;
+  /* A label may be written on two lines ("die Wohnungsgeber-\nbestätigung"):
+     a long compound across the frame covered a face. */
+  const lines = label.split("\n");
+  const longest = Math.max(...lines.map((l) => l.length));
+  const tagW = longest * 21 + 44;
+  const tagH = 54 + (lines.length - 1) * 36;
   const gap = 16;
-  const arrowY = side === "above" ? y - gap : y + h + gap;
-  const tagY = side === "above" ? arrowY - arrowLen - tagH : arrowY + arrowLen;
   const cx = x + w / 2;
+  const slideIn = (c: number) => Math.min(Math.max(c, tagW / 2 + 24), 1920 - tagW / 2 - 24);
+
+  /* The arrow comes in from whichever side the tag is on and stops short of
+     the ring. With boxes to avoid, try the preferred side, then further out,
+     then the other side, then slide the tag sideways off whatever it hits. */
+  let where = side;
+  let arrowLen = 62;
+  let tagCx = slideIn(cx);
+  if (avoid && avoid.length) {
+    const other = side === "above" ? "below" : "above";
+    const tries: ["above" | "below", number][] = [[side, 62], [side, 120], [other, 62], [side, 180], [other, 120]];
+    const rectFor = (sd: "above" | "below", len: number, c: number): Anchor => {
+      const ay = sd === "above" ? y - gap : y + h + gap;
+      const ty = sd === "above" ? ay - len - tagH : ay + len;
+      return { x: c - tagW / 2, y: ty, w: tagW, h: tagH };
+    };
+    const clear = (r: Anchor) => r.y > 8 && r.y + r.h < 1072 && !avoid.some((a) => overlaps(r, a, 20));
+    const hit = tries.find(([sd, len]) => clear(rectFor(sd, len, tagCx)));
+    if (hit) {
+      [where, arrowLen] = hit;
+    } else {
+      /* nowhere clear straight above or below: move sideways, away from the
+         first thing in the way, on the preferred side */
+      const r = rectFor(side, 62, tagCx);
+      const block = avoid.find((a) => overlaps(r, a, 20));
+      if (block) {
+        const left = slideIn(block.x - 20 - tagW / 2);
+        const right = slideIn(block.x + block.w + 20 + tagW / 2);
+        const lr = rectFor(side, 62, left);
+        const rr = rectFor(side, 62, right);
+        tagCx = clear(lr) && (!clear(rr) || Math.abs(left - cx) < Math.abs(right - cx)) ? left : right;
+      }
+    }
+  }
+  const arrowY = where === "above" ? y - gap : y + h + gap;
+  const tagY = where === "above" ? arrowY - arrowLen - tagH : arrowY + arrowLen;
+  /* the arrow leaves from under the tag and points at the ring's middle */
+  const ax = avoid ? Math.min(Math.max(cx, tagCx - tagW / 2 + 26), tagCx + tagW / 2 - 26) : cx;
+  const ay0 = where === "above" ? arrowY - arrowLen : arrowY + arrowLen;
+  const ang = Math.atan2(arrowY - ay0, cx - ax);
+  const head = (sx: number) => {
+    const bx = cx - Math.cos(ang) * 20;
+    const by = arrowY - Math.sin(ang) * 20;
+    return [bx + sx * Math.sin(ang) * 17, by - sx * Math.cos(ang) * 17];
+  };
 
   /*
    * The tag is centred on the ring, but a long word over a box near the edge
    * of the frame runs off it — "die andere Straßenseite" over the crossing at
    * the Haltestelle started at x=-92 and lost its first two words. So the tag
-   * slides back inside the frame while the arrow stays on the ring, which is
-   * the thing it has to keep pointing at. The arrow still comes out from
-   * under the tag, because a tag this wide is wider than the slide.
+   * slides back inside the frame (slideIn, above) while the arrow stays on
+   * the ring, which is the thing it has to keep pointing at.
    */
-  const tagW = label.length * 21 + 44;
-  const tagCx = Math.min(Math.max(cx, tagW / 2 + 24), 1920 - tagW / 2 - 24);
 
   return (
     <g opacity={shown}>
@@ -112,12 +164,12 @@ export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
         style={{
           transformBox: "fill-box",
           transformOrigin: "center",
-          transform: `translateY(${interpolate(enter, [0, 1], [side === "above" ? -18 : 18, 0])}px)`
+          transform: `translateY(${interpolate(enter, [0, 1], [where === "above" ? -18 : 18, 0])}px)`
         }}
       >
         <line
-          x1={cx}
-          y1={side === "above" ? arrowY - arrowLen : arrowY + arrowLen}
+          x1={ax}
+          y1={ay0}
           x2={cx}
           y2={arrowY}
           stroke={theme.color.attention}
@@ -125,11 +177,7 @@ export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
           strokeLinecap="round"
         />
         <path
-          d={
-            side === "above"
-              ? `M${cx - 17} ${arrowY - 20} L${cx} ${arrowY} L${cx + 17} ${arrowY - 20} Z`
-              : `M${cx - 17} ${arrowY + 20} L${cx} ${arrowY} L${cx + 17} ${arrowY + 20} Z`
-          }
+          d={`M${head(1).join(" ")} L${cx} ${arrowY} L${head(-1).join(" ")} Z`}
           fill={theme.color.attention}
         />
       </g>
@@ -152,18 +200,21 @@ export const Callout: React.FC<Props> = ({ box, label, from, to, side }) => {
           stroke={theme.color.attention}
           strokeWidth={3}
         />
-        <text
-          x={tagCx}
-          y={tagY + tagH / 2 + 1}
-          fill={theme.color.ink}
-          fontFamily={theme.font.body}
-          fontWeight={600}
-          fontSize={30}
-          textAnchor="middle"
-          dominantBaseline="central"
-        >
-          {label}
-        </text>
+        {lines.map((l, i) => (
+          <text
+            key={i}
+            x={tagCx}
+            y={tagY + 27 + 1 + i * 36}
+            fill={theme.color.ink}
+            fontFamily={theme.font.body}
+            fontWeight={600}
+            fontSize={30}
+            textAnchor="middle"
+            dominantBaseline="central"
+          >
+            {l}
+          </text>
+        ))}
       </g>
     </g>
   );

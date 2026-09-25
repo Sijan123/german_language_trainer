@@ -31,6 +31,11 @@ import { theme } from "../../theme";
 import { Model, toon, useModels } from "../models";
 import { useCanvasTexture } from "./buergerbuero";
 import type { SetLayout, SetState } from "./index";
+import { Behind, DoorFrame, DoorLeaf, Wall } from "./walls";
+
+/* the shop door: a real opening in the back wall, a glass door in it that
+   opens as the room value `door` goes to 1, and the street outside */
+const SHOP_DOOR = { x: -2.55, w: 0.95, h: 2.1 };
 
 const c = theme.set.baeckerei;
 const FONT = "'IBM Plex Sans', system-ui, sans-serif";
@@ -527,7 +532,7 @@ const BackCounter: React.FC = () => (
 const DOOR = { wood: "#b98a54", metal: c.chrome, woodDark: "#95663a" };
 const PLANT = { wood: "#c9b89a", woodDark: "#b3a283", plant: "#7f9a64" };
 const BIN = { metal: "#9aa3a8", metalDark: "#6f787d" };
-const MODELS = ["doorway", "pottedPlant", "trashcan"];
+const MODELS = ["pottedPlant", "trashcan"];
 
 export const Baeckerei3D: React.FC<{ state: SetState }> = ({ state }) => {
   const m = useModels(MODELS);
@@ -552,27 +557,33 @@ export const Baeckerei3D: React.FC<{ state: SetState }> = ({ state }) => {
           <meshBasicMaterial color={c.floorLine} />
         </mesh>
       ))}
-      {/* the back wall: plaster above, tiles below */}
-      <mesh position={[0, 1.6, -1.52]} receiveShadow>
-        <planeGeometry args={[30, 3.2]} />
-        <meshToonMaterial color={c.wall} />
-      </mesh>
-      <mesh position={[0, 0.6, -1.51]} receiveShadow>
-        <planeGeometry args={[30, 1.2]} />
-        <meshToonMaterial color={c.wallDark} />
-      </mesh>
-      <mesh position={[0, 1.2, -1.505]}>
-        <boxGeometry args={[30, 0.025, 0.02]} />
-        <meshToonMaterial color={c.shelf} />
-      </mesh>
-      {/* a band of darker wall at the top, like the drawn set */}
-      <mesh position={[0, 2.85, -1.505]}>
-        <planeGeometry args={[30, 0.5]} />
-        <meshToonMaterial color="#e2d4c0" />
-      </mesh>
+      {/* the back wall: plaster above, tiles below, a rail between, a darker
+          band at the top like the drawn set; all cut round the door */}
+      <Wall
+        x0={-9} x1={9} z={-1.5} height={3.2} color={c.wall} openings={[SHOP_DOOR]}
+        bands={[
+          { y0: 0, y1: 1.2, color: c.wallDark },
+          { y0: 1.19, y1: 1.215, color: c.shelf, proud: 0.02 },
+          { y0: 2.6, y1: 3.1, color: "#e2d4c0" }
+        ]}
+      />
 
-      {/* the shop door and its window, where he comes in from */}
-      <Model model={m.doorway} at={[-2.55, -1.47]} yaw={-Math.PI / 2} paint={DOOR} />
+      {/* the shop door, where he comes in from the street */}
+      <DoorFrame x={SHOP_DOOR.x} w={SHOP_DOOR.w} h={SHOP_DOOR.h} z={-1.5} color={DOOR.wood} />
+      <DoorLeaf x={SHOP_DOOR.x} w={SHOP_DOOR.w} h={SHOP_DOOR.h} z={-1.5} open={v.door ?? 0} hinge="left" color={DOOR.woodDark} glass />
+      <Behind x={SHOP_DOOR.x} w={3.2} z={-1.6} depth={2.4} height={3.2} wall="#e4ecef" floor="#bdb6a8">
+        {/* across the street: a house front with windows */}
+        <mesh position={[SHOP_DOOR.x, 1.6, -3.99]}>
+          <planeGeometry args={[3.2, 3.2]} />
+          <meshToonMaterial color="#d8c3a6" />
+        </mesh>
+        {[-0.8, 0.8].map((dx) => (
+          <mesh key={dx} position={[SHOP_DOOR.x + dx, 1.9, -3.98]}>
+            <planeGeometry args={[0.7, 0.9]} />
+            <meshBasicMaterial color="#9fb7c4" />
+          </mesh>
+        ))}
+      </Behind>
       <group position={[-3.6, 1.45, -1.5]}>
         <mesh>
           <boxGeometry args={[1.1, 1.2, 0.04]} />

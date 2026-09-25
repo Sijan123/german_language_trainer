@@ -37,8 +37,10 @@ const PAPER = DESK_TOP + 0.004;
 export const buergerbueroLayout: SetLayout = {
   chairs: {
     /* seat centre, the way a person sitting on it faces, seat height */
-    visitor: { at: [-0.8, 0.0], yaw: 0, seat: 0.46, desk: true },
-    official: { at: [0.74, 0.0], yaw: Math.PI, seat: 0.47, desk: true },
+    /* both turned 17 degrees towards the camera, so the master sees faces
+       and not two profiles (the review: his mouth was almost invisible) */
+    visitor: { at: [-0.76, 0.0], yaw: -0.3, seat: 0.46, desk: true },
+    official: { at: [0.67, 0.0], yaw: Math.PI + 0.3, seat: 0.47, desk: true },
     bench: { at: [-3.3, -1.12], yaw: -Math.PI / 2, seat: 0.44 }
   },
 
@@ -84,7 +86,8 @@ export const buergerbueroLayout: SetLayout = {
 
 /* Kenney's material names, repainted. Module-level so the memo in <Model>
    sees the same object every frame and never re-clones a mesh. */
-const BEECH = { wood: "#cbb08a", woodDark: "#a88d69", metal: c.chrome, metalDark: "#5d666c", metalMedium: "#7b858b", carpet: c.stuhl, carpetDarker: c.stuhlDark, _defaultMat: c.wall };
+/* a shade darker than it was, so white paper on the desk reads */
+const BEECH = { wood: "#b39469", woodDark: "#957a57", metal: c.chrome, metalDark: "#5d666c", metalMedium: "#7b858b", carpet: c.stuhl, carpetDarker: c.stuhlDark, _defaultMat: c.wall };
 const OFFICE_CHAIR = { carpet: "#4f5d69", metalMedium: "#6f7a82", metal: c.chrome };
 const VISITOR = { wood: c.stuhl, woodDark: c.stuhlDark };
 const BENCH = { wood: c.stuhl, woodDark: c.stuhlDark, carpet: c.stuhl, metal: c.chrome };

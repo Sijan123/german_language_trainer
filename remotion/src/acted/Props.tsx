@@ -17,6 +17,7 @@ import { toon } from "./models";
 import { quatFromBasis, type Xform } from "./math";
 import { Bag, CakeBox, Card, Coins, Loaf, Roll, Slice, Wallet } from "./BakeryProps";
 import { AlarmClock, Key, LunchBox, Mug, Sandwich } from "./FlatProps";
+import { Basket, Carton, Eggs, Jar, Note, Phone, Tomato } from "./GroceryProps";
 import { theme } from "../theme";
 
 const FONT = "'IBM Plex Sans', system-ui, sans-serif";
@@ -40,6 +41,10 @@ function pageTexture(kind: "form" | "sheet") {
   const g = cv.getContext("2d")!;
   g.fillStyle = "#fbfaf6";
   g.fillRect(0, 0, W, H);
+  /* a grey edge, so a white page reads against a pale desk */
+  g.strokeStyle = "#a9afb6";
+  g.lineWidth = 14;
+  g.strokeRect(7, 7, W - 14, H - 14);
   g.fillStyle = "#1f2a3c";
   g.textBaseline = "alphabetic";
   const rule = (y: number, x0 = 70, x1 = W - 70) => {
@@ -144,6 +149,11 @@ const Page: React.FC<{ kind: "form" | "sheet"; ink?: Ink }> = ({ kind, ink }) =>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[L, T, S]} />
         <meshToonMaterial color="#f4f2ec" />
+      </mesh>
+      {/* a soft contact shadow just under it: a 1.5 mm page casts none of its own */}
+      <mesh position={[0.004, -T / 2 - 0.0004, 0.004]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[L + 0.01, S + 0.01]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.16} depthWrite={false} />
       </mesh>
       <mesh position={[0, T / 2 + 0.0002, 0]} quaternion={PAGE_Q}>
         <planeGeometry args={[S, L]} />
@@ -277,6 +287,13 @@ export const Prop: React.FC<{ kind: PropKind; x: Xform; open: number; ink?: Ink 
     {kind === "lunchbox" ? <LunchBox open={open} /> : null}
     {kind === "mug" ? <Mug /> : null}
     {kind === "key" ? <Key /> : null}
+    {kind === "basket" ? <Basket /> : null}
+    {kind === "carton" ? <Carton /> : null}
+    {kind === "eggs" ? <Eggs /> : null}
+    {kind === "tomato" ? <Tomato /> : null}
+    {kind === "jar" ? <Jar /> : null}
+    {kind === "phone" ? <Phone /> : null}
+    {kind === "note" ? <Note /> : null}
   </group>
 );
 

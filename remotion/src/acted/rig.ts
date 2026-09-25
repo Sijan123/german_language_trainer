@@ -163,6 +163,8 @@ const BODY_SPOTS: Record<string, { from: "chest" | "pelvis"; off: Vec3; mirror: 
   read: { from: "chest", off: [0.3, -0.17, 0.03], mirror: true, palm: "up" },
   /* carrying something at the side while walking */
   carry: { from: "chest", off: [0.02, -0.56, 0.23], mirror: true, palm: "in" },
+  /* a phone at the ear: beside the head, the palm towards it */
+  phone: { from: "chest", off: [0.04, 0.17, 0.11], mirror: true, palm: "in" },
   /* a cup at the lips: in front of the chin, a little to this hand's side */
   drink: { from: "chest", off: [0.17, 0.1, 0.05], mirror: true, palm: "in" },
   /* hand on the thigh, sitting */
@@ -186,8 +188,14 @@ function palmVec(p: Palm, side: Side): Vec3 {
 /* 1. The core                                                         */
 /* ------------------------------------------------------------------ */
 
+/** The rig's proportions for this person: P, unless their model has its own. */
+export function dims(p: PersonProg): typeof P {
+  return p.look.proportions ? { ...P, ...p.look.proportions } : P;
+}
+
 export function solveCore(p: PersonProg, f: number, ctx: Ctx): Core {
   const k = p.look.height / 1.76;
+  const D = dims(p);
   const t = f / ctx.fps;
 
   /* ---- where the feet are, and are they walking */
@@ -211,16 +219,33 @@ export function solveCore(p: PersonProg, f: number, ctx: Ctx): Core {
     if (seg.faceTravel) {
       /* turn into the direction of travel over the first few frames and out
          of it into the final facing over the last few */
-      const ahead = pathAt(seg, Math.min(seg.D, d + 0.3)).heading;
+      /* people turn into a bend a stride before they reach it, and round it
+         over a metre, not at the corner: the facing is the average direction
+         of the next metre of path */
+      const heading = (from: number) => {
+        let sx = 0;
+        let sz = 0;
+        for (const k of [0.2, 0.4, 0.6, 0.8, 1.0]) {
+          const h = pathAt(seg, Math.min(seg.D, from + k)).heading;
+          sx += Math.cos(h);
+          sz += Math.sin(h);
+        }
+        return Math.atan2(sz, sx);
+      };
+      const ahead = heading(d);
       const y0 = p.yaw.at(seg.f0 - 1);
       /* turning into the walk and out of it takes longer the further there
          is to turn: half a second for a quarter turn was a whip for a half */
-      const startDir = pathAt(seg, Math.min(seg.D, 0.3)).heading;
+      const startDir = heading(0);
       const tin = ctx.fps * Math.max(0.45, 0.32 * Math.abs(angleDiff(y0, startDir)));
       const tout = ctx.fps * Math.max(0.45, 0.32 * Math.abs(angleDiff(pathAt(seg, seg.D).heading, seg.face)));
       const inW = smooth((f - seg.f0) / tin);
       const outW = smooth((f - (seg.f1 - tout)) / tout);
-      let y = y0 + angleDiff(y0, ahead) * inW;
+      /* which way round to turn is decided once, at the start: measured
+         afresh each frame, a walk setting off almost straight behind the
+         person flipped from turning left to turning right as the heading
+         crossed the half turn, and the body spun round in a frame */
+      let y = y0 + (angleDiff(y0, startDir) + angleDiff(startDir, ahead)) * inW;
       y = y + angleDiff(y, seg.face) * outW;
       yaw = y;
     }
@@ -244,12 +269,12 @@ export function solveCore(p: PersonProg, f: number, ctx: Ctx): Core {
   const seat = [...p.seats].reverse().find((x) => x.f <= f);
   if (seat) {
     const ch = ctx.chair(seat.chair, f);
-    seatPelvis = add([ch.at[0], ch.seat + P.pelvisSeat * k, ch.at[1]], mul(hipF, -0.02));
+    seatPelvis = add([ch.at[0], ch.seat + D.pelvisSeat * k, ch.at[1]], mul(hipF, -0.02));
   }
 
   /* weight shifting from foot to foot while standing; almost nothing seated */
   const sway = wobble(t * 0.9, p.seed) * (1 - s);
-  const standPelvis = add(add(rootV, [0, P.pelvisStand * k + bob, 0]), mul(hipR, 0.012 * sway));
+  const standPelvis = add(add(rootV, [0, D.pelvisStand * k + bob, 0]), mul(hipR, 0.012 * sway));
   let pelvis = standPelvis;
   if (seatPelvis && s > 0) {
     /* the hips go back before they go down, which is how a person sits */
@@ -267,7 +292,7 @@ export function solveCore(p: PersonProg, f: number, ctx: Ctx): Core {
   const lean =
     lerp(0.03, 0.09, s) +
     /* the hip hinge: forward while going down or getting up */
-    0.5 * bump(s) * (s > 0.001 && s < 0.999 ? 1 : 0) +
+    0.62 * bump(s) * (s > 0.001 && s < 0.999 ? 1 : 0) +
     0.05 * walking +
     p.lean.at(f) +
     0.025 * speaking * s +
@@ -278,18 +303,18 @@ export function solveCore(p: PersonProg, f: number, ctx: Ctx): Core {
   const chestR = rotAxis(hipR, chestU, twist);
   const chestF = cross(chestU, chestR);
   const breath = Math.sin((t / 3.6) * Math.PI * 2 + p.seed);
-  const chestTop = add(add(pelvis, mul(chestU, P.spine * k)), mul(chestU, 0.004 * breath));
+  const chestTop = add(add(pelvis, mul(chestU, D.spine * k)), mul(chestU, 0.004 * breath));
   const shoulder = {
-    L: add(add(chestTop, mul(chestR, -P.shoulderHalf * k)), mul(chestU, -0.02 * k + 0.002 * breath)),
-    R: add(add(chestTop, mul(chestR, P.shoulderHalf * k)), mul(chestU, -0.02 * k + 0.002 * breath))
+    L: add(add(chestTop, mul(chestR, -D.shoulderHalf * k)), mul(chestU, -0.02 * k + 0.002 * breath)),
+    R: add(add(chestTop, mul(chestR, D.shoulderHalf * k)), mul(chestU, -0.02 * k + 0.002 * breath))
   };
-  const neck = add(chestTop, mul(chestU, P.neck * k));
-  const head0 = add(neck, mul(chestU, P.headUp * k));
+  const neck = add(chestTop, mul(chestU, D.neck * k));
+  const head0 = add(neck, mul(chestU, D.headUp * k));
 
   /* ---- the legs */
   const hip = {
-    L: add(pelvis, mul(hipR, -P.hipHalf * k)),
-    R: add(pelvis, mul(hipR, P.hipHalf * k))
+    L: add(pelvis, mul(hipR, -D.hipHalf * k)),
+    R: add(pelvis, mul(hipR, D.hipHalf * k))
   };
   if (!feet) {
     feet = {
@@ -301,9 +326,9 @@ export function solveCore(p: PersonProg, f: number, ctx: Ctx): Core {
   const ankle = {} as Record<Side, Vec3>;
   const footF = {} as Record<Side, Vec3>;
   for (const side of ["L", "R"] as const) {
-    const a: Vec3 = [feet[side][0], feet[side][1] + P.ankle * k, feet[side][2]];
+    const a: Vec3 = [feet[side][0], feet[side][1] + D.ankle * k, feet[side][2]];
     const pole = add(mul(hipF, 1), mul(hipR, (side === "R" ? 0.15 : -0.15)));
-    const sol = ik2(hip[side], a, P.thigh * k, P.shin * k, pole);
+    const sol = ik2(hip[side], a, D.thigh * k, D.shin * k, pole);
     knee[side] = sol.mid;
     ankle[side] = sol.tip;
     footF[side] = hipF;
@@ -554,6 +579,7 @@ function motionOffset(m: Motion, f: number, side: Side, fps: number): Vec3 {
 export function solveBody(p: PersonProg, f: number, ctx: Ctx): Body {
   const c = ctx.core(p.name, f) as Core & { atDesk?: boolean };
   const k = c.k;
+  const D = dims(p);
 
   const shoulderOut: Record<Side, Vec3> = { L: c.shoulder.L, R: c.shoulder.R };
   const elbow = {} as Record<Side, Vec3>;
@@ -612,8 +638,8 @@ export function solveBody(p: PersonProg, f: number, ctx: Ctx): Body {
     const solveFor = (palmTarget: Vec3) => {
       let fingers = norm(sub(palmTarget, sh));
       fingers = norm(sub(fingers, mul(aim.n, dot(fingers, aim.n))));
-      const wristT = sub(palmTarget, mul(fingers, P.palm * k));
-      const sol = ik2(sh, wristT, P.upper * k, P.fore * k, pole);
+      const wristT = sub(palmTarget, mul(fingers, D.palm * k));
+      const sol = ik2(sh, wristT, D.upper * k, D.fore * k, pole);
       const fore = norm(sub(sol.tip, sol.mid));
       let fx = sub(fore, mul(aim.n, dot(fore, aim.n)));
       if (len(fx) < 1e-4) fx = fingers;
@@ -674,7 +700,7 @@ export function solveBody(p: PersonProg, f: number, ctx: Ctx): Body {
   const pp = pulsesPitch(p, f, ctx.fps);
   headF = rotAxis(headF, headR, pp);
   headU = rotAxis(headU, headR, pp);
-  const head = add(c.neck, mul(headU, P.headUp * k));
+  const head = add(c.neck, mul(headU, D.headUp * k));
 
   return {
     ...c,
@@ -709,6 +735,12 @@ function lookPoint(p: PersonProg, c: Core, to: LookTarget | "default", f: number
     if (held && held[0] === p.name) {
       const side = held[1];
       return add(own.wrist[side], add(mul(own.handAxes[side].x, 0.1 * c.k), mul(own.handAxes[side].y, 0.02)));
+    }
+    /* and a thing inside something in this person's hand (the oat milk in
+       the basket he carries) is read through that hand, for the same reason */
+    const root = ctx.rootHolder(to.prop, f);
+    if (root && root[0] === p.name && own.hand[root[1]]) {
+      return ctx.propVia(to.prop, f, p.name, root[1], own.hand[root[1]]).p;
     }
     return ctx.prop(to.prop, f).p;
   }

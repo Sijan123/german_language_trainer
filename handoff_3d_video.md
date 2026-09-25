@@ -97,6 +97,9 @@ remotion/
       sets/
         index.ts      SETS3D registry; SetLayout / SetState types
         buergerbuero.tsx   the Bürgerbüro: layout (data) + component
+        baeckerei.tsx      the bakery (c018)
+        wohnung.tsx        the flat: bedroom + kitchen (c001)
+        walls.tsx          walls with real doorways, door frames and leaves, rooms behind
       SceneActed.tsx  the composition (3D canvas + all 2D overlays + audio)
     scenes/
       c010.ts         scene file; `acted: c010Acted` switches it to 3D
@@ -444,7 +447,9 @@ board, so `type` reads as working there), `lunchbox`, `lunchOut`, `mug`,
    convention above. Palettes map Kenney material names (`wood`, `metal`,
    `metalDark`, `carpet`, `plant`, …) to colours. Define them **at module
    level**, never inline.
-3. Build walls, floor, signs and screens as simple meshes. Text goes on canvas
+3. Build walls with `Wall` from `walls.tsx` (with `openings` for doors, a
+   `DoorFrame`, a `DoorLeaf` and a `Behind` room), never a flat plane with a
+   door painted on it. Floor, signs and screens are simple meshes. Text goes on canvas
    textures (see `Display`, `Screen` and `Sign` in `buergerbuero.tsx`).
 4. Write the layout: chairs with correct seat heights, spots where hands and
    props go, anchors for callouts.
@@ -487,6 +492,13 @@ minute and writes `public/models/cast/<name>.glb`. Blender 5.2 is at
   `shoes`, `jacket`, `lining`, `hair`, `lips`, `mouth` …). `Person3D.tsx`
   paints those from the Look3D, so colours stay in the scene file.
 - **Shape keys**: `wide`, `round`, `smile` (mouth), `brows`.
+- **Sijan's face follows the real Sijan** (`image/sijan.PNG`, 2026-09-25),
+  stylised: `CAST["sijan"]` has `hair="curly"` (a volume to the jaw with a
+  sine-pattern curl texture, the forehead clear), `beard="short"` (a 6 mm
+  shell over the jaw, chin and lower cheeks, joined to the moustache, lips
+  and nose clear), `brows="straight"` (thick, low), `lid=50` (slightly
+  hooded) and `face="sijan"` (longer face, broad jaw, full cheeks, broader
+  nose). Rebuild with `npm run cast -- sijan`; every film picks it up.
 - **Posing** (`Person3D.tsx`): every bone gets a basis from the solved Body;
   the same function on the rest pose gives the rest basis, and the bone is
   turned by the difference. Rig joints (pelvis, shoulders, elbows, wrists,
@@ -494,6 +506,42 @@ minute and writes `public/models/cast/<name>.glb`. Blender 5.2 is at
   `JAW` and `LID` set how far the jaw drops and the lids close.
 - `rig.ts`'s `pocketIn` spot moved forward (0.07 → 0.12) so the hand goes
   under the jacket panel instead of into the chest.
+
+### Downloaded avatars (c002: `sijan_test.glb`)
+
+A rigged avatar from elsewhere (Avaturn, Mixamo, Ready Player Me) can play a
+part. It was tried as c002's Sijan (`public/models/cast/sijan_test.glb`, an
+Avaturn body, dressed as `sijan_test_dressed.glb`); because it could not move
+its mouth, the user switched c002 back to the cast's `sijan.glb`. The
+support stays for the next avatar that has face shape keys.
+
+- **Skeleton:** `Person3D.tsx` recognises Mixamo bone names (`Hips`, `Spine`,
+  `LeftArm`, `LeftHandIndex1` …, with or without a `mixamorig` prefix) and
+  maps them onto the rig's joints. Bones it has no say over (Spine1, toes)
+  ride their parents. The rest pose is read off the skeleton: facing from
+  the hips, hand axes from the knuckles, so a T-pose facing +z works.
+- **Scale:** the model is scaled to `look.height` by its own bounding box.
+- **Proportions:** a model's limbs are not the rig's (Avaturn's upper arm is
+  16% shorter relative to height). Give `look.proportions` in metres for a
+  1.76 m frame (`upper`, `fore`, `thigh`, `shin`, `spine`, `shoulderHalf`,
+  `hipHalf`, `ankle`, `pelvisStand`, `headUp`) and the rig solves with them,
+  so arms reach with their own length instead of being stretched. Measure
+  them from the GLB's joints (see the python in this session's history, or
+  read node transforms) and multiply by 1.76 / model height.
+- **Look:** a textured material keeps its texture, drawn with the same
+  three-band toon shading. Untextured materials are painted from the look
+  by name as for the cast.
+- **Clothes:** `blender/dress.py <in.glb> <out.glb> [--preview dir]` dresses
+  such an avatar. It builds garments as shells cut from the body's own
+  surface (so they keep its skin weights), pushed out along the normals: a
+  white T-shirt, an open jacket, baggy jeans, rounded trainers, curly hair
+  (small spheres on a dark cap) and an earbud. The body is pressed in under
+  the clothes and the feet are shrunk into the shoes. Garment materials are
+  named `top`, `jacket`, `lining`, `trousers`, `shoes`, `hair`, `earbud`, so
+  the scene's Look3D colours them.
+- **Limits:** such an avatar has no jaw, eyelids or eye bones, so its mouth
+  does not move and it does not blink; head and body act as usual. Its
+  realistic face sits oddly next to the stylised Shruti.
 
 ---
 
@@ -664,6 +712,57 @@ from a jolt that was measured and fixed on c010, c018 or c001.
 - No footsteps (the user's direction). Room sounds (bell, slicer, till,
   coins, chair, typing, pen) stay low under the voices (volume 0.25–0.45).
 
+**From the animation editor's review (2026-09-24)**
+
+An agent reviewed the three rendered films as a professional animation
+editor would (contact sheets, dense frame sheets, audio measurements). Its
+findings, now rules:
+
+- **Doors are real openings.** A painted door walked "through" (behind the
+  wall) reads as a body sliced by a closed door. Build walls with
+  `acted/sets/walls.tsx` (`Wall` with `openings`, `DoorFrame`, `DoorLeaf`,
+  `Behind` for the room beyond). Exits go through the opening and then
+  *sideways behind the solid wall*; entrances start behind it. A shop door
+  can open on a `room` value (`door`) with the bell.
+- **Nobody starts a line with their back to the camera.** Turn them 0.5 s
+  or more before the line begins (c018: she took the loaf and turned before
+  "Geschnitten oder am Stück?").
+- **Don't hide the action with the actor.** If a body covers the thing being
+  done (the slicer), have them step aside while it happens.
+- **Faces in the master.** Angle chairs 15–20° towards the camera and keep
+  the master low and tight enough that faces are big (c010's chairs are
+  turned 0.3 rad; `sit` now squares a person with the chair's yaw).
+- **Callout labels never cover a face.** `Callout` takes `avoid` boxes
+  (SceneActed passes both heads and the subtitle card) and tries above,
+  further above, below, then sideways, with a diagonal arrow. Long words go
+  on two lines: `label: "die Wohnungsgeber-
+bestätigung"`. A ring on a prop
+  that goes out of sight (into a pocket) disappears with it.
+- **Silence is capped.** Silent business of more than about 3 s sags. Start
+  the business under the line before (shift its `gap` cues earlier) rather
+  than lengthening the gap.
+- **No digital silence.** A room-tone bed (`sfx/roomtone.wav`, at 0.025) runs
+  under every acted film. Room sounds that are part of the action (bell,
+  slicer, till, coins) are around 0.5–0.65, audible but under the voices.
+- **Camera moves are slow.** A glide into a room takes 2.5 s or more and
+  starts once the walker has stopped. A 0.7 s push read as a lurch.
+- **Sitting down and standing up take time.** The defaults are now 1.4 s to
+  sit and 1.3 s to stand, with a stronger hip hinge. Don't shorten them.
+- **Paper needs contrast.** Pages have a grey border and a contact shadow,
+  and the desk is darker. A tiny prop (the key) is drawn larger with a
+  bright tag, so the ring has something to ring.
+- **Eyelids shut fully.** `LID` is 1.62 rad, so no white shows in a blink
+  with the head down.
+- **Walks turn in one direction.** The engine picks the turn once per walk,
+  and the facing is the average direction of the next metre of path. A walk
+  setting off nearly backwards used to spin the body in one frame, and
+  everything carried jumped with it.
+
+Not done yet, from the same review: speaking the Wortschatz card aloud and
+making it match the callouts (needs new audio); visemes that read under the
+beard; listening beats at the desk in c010; a sit/stand with a real
+anticipation pose.
+
 **Check before rendering**
 
 1. Solve every frame in Node and print the biggest jolts (section 9b).
@@ -721,15 +820,19 @@ from a jolt that was measured and fixed on c010, c018 or c001.
 
 ## 11. Current state
 
-**2026-09-24: three acted films, all using the Blender cast, none rendered
-yet** — the user reviews each in Studio first, then `npm run film c010 c018
-c001`. Frame numbers (after gaps):
+**2026-09-24: three acted films, all using the Blender cast, rendered and
+shipped** after an animation editor's review and a round of fixes (section
+9c). Frame numbers (after gaps):
 
 - c010: lines at 206 623 772 … 1844, 2347 frames
-- c018: 0:194 1:306 2:556 3:642 4:834 5:942 6:1029 7:1105 8:1324 9:1516
-  10:1595 11:1771 12:1956, 2386 frames
-- c001: 0:224 1:336 2:443 3:543 4:660 5:769 6:1000 7:1077 8:1319 9:1425
-  10:1556 11:1677, 2097 frames
+- c018: 0:200 1:312 2:556 3:642 4:858 5:966 6:1053 7:1129 8:1318 9:1492
+  10:1571 11:1747 12:1932, 2362 frames
+- c001: 0:194 1:306 2:413 3:513 4:630 5:739 6:952 7:1029 8:1247 9:1353
+  10:1484 11:1605, 2040 frames
+- c002 (the cast's Sijan; an earlier cut used the test avatar; supermarket
+  + home, set `telefon`): 0:134 1:221 2:349
+  3:430 4:573 5:667 6:823 7:929 8:1050 9:1148 10:1291 11:1382 12:1514, 1911
+  frames
 
 To check a film solves on every frame before rendering, bundle a debug
 script as in section 8 that runs `world.body` / `world.prop` over every frame

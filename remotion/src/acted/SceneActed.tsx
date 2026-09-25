@@ -101,12 +101,20 @@ export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dia
     : undefined;
   let calloutBox: { x: number; y: number; w: number; h: number } | null = null;
   if (callout) {
-    const at = prog.props[callout.at]
-      ? world.prop(callout.at, frame).x.p
-      : prog.set.anchors[callout.at];
+    const isProp = !!prog.props[callout.at];
+    const at = isProp ? world.prop(callout.at, frame).x.p : prog.set.anchors[callout.at];
     if (!at) throw new Error(`scenes/${d.id}.ts: callout at "${callout.at}", which is neither a prop nor an anchor`);
-    calloutBox = projectBox(pose, at, callout.size ?? [0.09, 0.06]);
+    /* a ring round a thing that has gone into a pocket rings nothing: it goes with it */
+    if (!isProp || world.prop(callout.at, frame).visible) calloutBox = projectBox(pose, at, callout.size ?? [0.09, 0.06]);
   }
+  /* what a callout's label must not cover: both faces, and the subtitle card */
+  const faces = bodies.map((b) => {
+    const c = project(pose, b.head);
+    const top = project(pose, add(b.head, mul(b.headU, 0.17 * b.k)));
+    const r = Math.max(24, Math.abs(c.y - top.y) * 1.25);
+    return { x: c.x - r, y: c.y - r * 1.15, w: 2 * r, h: 2.5 * r };
+  });
+  const avoid = [...faces, { x: (W - BUBBLE_WIDTH) / 2 - 110, y: H - 70 - 200, w: BUBBLE_WIDTH + 220, h: 270 }];
 
   const thought = line && !callout ? scene.thoughts?.[line.i] : undefined;
   const thoughtWord = thought && line
@@ -124,7 +132,11 @@ export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dia
           <Audio src={staticFile(l.clip)} />
         </Sequence>
       ))}
-      {/* the room: footsteps, the chair, paper, the keyboard, the pen */}
+      {/* room tone under everything, so a pause is a quiet room and not a
+          player that has stopped */}
+      {/* the file is normalised to full scale; 0.025 puts it near -45 dBFS */}
+      <Audio src={staticFile("sfx/roomtone.wav")} loop volume={0.025} />
+      {/* the room: the chair, the keyboard, the pen, the bell, the till */}
       {prog.sounds.map((s, i) => (
         <Sequence key={"sfx" + i} from={Math.max(0, s.f)} durationInFrames={s.frames ?? fps * 2} layout="none">
           <Audio src={staticFile(`sfx/${s.name}.wav`)} volume={s.volume} />
@@ -173,6 +185,7 @@ export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dia
             from={calloutWord.from}
             to={line.endAt}
             side={calloutBox.y - 130 > 40 ? "above" : "below"}
+            avoid={avoid}
           />
         ) : null}
         {inScene && line && thought && thoughtWord && headPx && headTopPx ? (

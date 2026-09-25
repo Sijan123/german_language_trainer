@@ -63,18 +63,18 @@ const beats: Beat[] = [
   sij({ do: "look", to: { world: FLOOR_AT_HIS_FEET }, dur: 0.1, at: { t: 0 } }),
   sij({ do: "smile", amount: 0, dur: 0.1, at: { t: 0 } }),
   sij({ do: "nod", size: 0.6, dur: 1.2, at: { gap: 0, plus: 1.2 } }),
-  sij({ do: "nod", size: 0.9, dur: 1.4, at: { gap: 0, plus: 3.4 } }),
+  sij({ do: "nod", size: 0.9, dur: 1.4, at: { gap: 0, plus: 2.6 } }),
   /* her: coffee at the island, then the clock */
   shr({ do: "reach", hand: "R", to: { body: "drink" }, palm: "in", grip: 0.8, dur: 0.1, at: { t: 0 } }),
   shr({ do: "take", prop: "mug", hand: "R", grip: "carry", at: { t: 0 } }),
   shr({ do: "look", to: { world: KITCHEN_CLOCK }, dur: 0.45, at: { gap: 0, plus: 0.1 } }),
-  shr({ do: "brows", amount: 0.9, at: { gap: 0, plus: 0.4 } }),
-  shr({ do: "reach", hand: "R", to: { spot: "mug", off: [0, 0.05, 0] }, palm: "in", dur: 0.5, at: { gap: 0, plus: 0.6 } }),
-  shr({ do: "put", prop: "mug", spot: "mug", at: { gap: 0, plus: 1.1 } }),
-  shr({ do: "rest", hand: "R", at: { gap: 0, plus: 1.15 } }),
-  shr({ do: "brows", amount: 0.2, at: { gap: 0, plus: 1.4 } }),
-  shr({ do: "walk", speed: 1.45, path: [[2.2, -0.68], [0.5, -0.7], [-0.35, -0.8], HER_BEDROOM], face: Math.PI, at: { gap: 0, plus: 1.15 } }),
-  shr({ do: "look", to: { face: S }, dur: 0.5, at: { gap: 0, plus: 3.6 } }),
+  shr({ do: "brows", amount: 0.9, at: { gap: 0, plus: 0.3 } }),
+  shr({ do: "reach", hand: "R", to: { spot: "mug", off: [0, 0.05, 0] }, palm: "in", dur: 0.45, at: { gap: 0, plus: 0.4 } }),
+  shr({ do: "put", prop: "mug", spot: "mug", at: { gap: 0, plus: 0.85 } }),
+  shr({ do: "rest", hand: "R", at: { gap: 0, plus: 0.9 } }),
+  shr({ do: "brows", amount: 0.2, at: { gap: 0, plus: 1.2 } }),
+  shr({ do: "walk", speed: 1.7, path: [[2.08, -0.62], [0.5, -0.7], [-0.35, -0.8], HER_BEDROOM], face: Math.PI, at: { gap: 0, plus: 0.9 } }),
+  shr({ do: "look", to: { face: S }, dur: 0.5, at: { gap: 0, plus: 3.0 } }),
 
   /* ---------------------------------------------------------- 0: half past seven! */
   sij({ do: "eyes", open: 1, dur: 0.15, at: { line: 0, word: "Sijan", plus: 0.15 } }),
@@ -121,14 +121,15 @@ const beats: Beat[] = [
   /* ---------------------------------------------------------- 5: shower */
   sij({ do: "look", to: { face: R }, dur: 0.3, at: { line: 5, word: "Ich" } }),
   sij({ do: "brows", amount: 0.2, at: { line: 5, word: "Ich" } }),
-  sij({ do: "stand", dur: 0.95, at: { line: 5, word: "Ich" } }),
+  sij({ do: "stand", at: { line: 5, word: "Ich" } }),
   sij({ do: "look", to: { world: BATHROOM }, dur: 0.4, at: { line: 5, word: "ziehe" } }),
-  sij({ do: "walk", speed: 1.25, path: [[-1.55, 0.2], [-0.95, -1.05], [-0.9, -2.3]], at: { line: 5, word: "und" } }),
+  /* through the open bathroom door and sideways behind the wall */
+  sij({ do: "walk", speed: 1.25, path: [[-1.55, 0.2], [-0.95, -1.05], [-0.9, -1.9], [-1.75, -2.1]], at: { line: 5, word: "ziehe" } }),
   shr({ do: "look", to: { hand: "Sijan.R" }, dur: 0.6, at: { line: 5, word: "ziehe" } }),
   shr({ do: "smile", amount: 0.3, at: { line: 5, end: true } }),
 
   /* ---------------------------------------------------------- back to the kitchen */
-  shr({ do: "walk", speed: 1.35, path: [[-0.35, -0.78], [0.5, -0.7], [2.2, -0.68], HER_ISLAND], face: Math.PI, at: { gap: 6, plus: 0.1 } }),
+  shr({ do: "walk", speed: 1.6, path: [[-0.35, -0.78], [0.5, -0.7], [2.08, -0.62], HER_ISLAND], face: Math.PI, at: { gap: 6, plus: 0.1 } }),
   shr({ do: "look", to: { world: BATHROOM }, dur: 0.5, at: { line: 6, plus: -0.3 } }),
 
   /* ---------------------------------------------------------- 6-7: a sandwich? */
@@ -154,9 +155,9 @@ const beats: Beat[] = [
   shr({ do: "reach", hand: "R", to: { body: "present", off: [-0.08, 0.05, -0.04] }, palm: "in", dur: 0.5, at: { gap: 8, plus: 3.95 } }),
   shr({ do: "look", to: { face: S }, dur: 0.45, at: { gap: 8, plus: 4.4 } }),
   /* him: dressed now, in from the bathroom */
-  /* turned round behind the wall, where nobody sees him do it */
-  sij({ do: "turn", yaw: -Math.PI / 2, dur: 0.8, at: { gap: 8, plus: 0.3 } }),
-  sij({ do: "walk", speed: 1.2, path: [[-0.9, -1.1], [-0.35, -0.8], [0.5, -0.7], HIS_ISLAND], face: 0, at: { gap: 8, plus: 1.3 } }),
+  /* turned round behind the wall, where nobody sees him do it, and out */
+  sij({ do: "turn", yaw: 0, dur: 0.5, at: { gap: 8, plus: 0.0 } }),
+  sij({ do: "walk", speed: 1.35, path: [[-0.9, -1.95], [-0.9, -1.1], [-0.35, -0.8], [0.5, -0.7], HIS_ISLAND], face: 0, at: { gap: 8, plus: 0.5 } }),
   sij({ do: "look", to: { face: R }, dur: 0.4, at: { gap: 8, plus: 3.4 } }),
   sij({ do: "smile", amount: 0.3, at: { gap: 8, plus: 3.4 } }),
 
@@ -224,7 +225,8 @@ const beats: Beat[] = [
   shr({ do: "smile", amount: 0.6, at: { line: 11, word: "Schatz" } }),
   sij({ do: "look", to: { world: [0.75, 1.5, -1.5] }, dur: 0.4, at: { line: 11, end: true, plus: 0.3 } }),
   sij({ do: "turn", yaw: Math.PI / 2 + 0.4, dur: 0.9, at: { line: 11, end: true, plus: 0.3 } }),
-  sij({ do: "walk", speed: 1.3, path: [[0.75, -0.8], [0.75, -2.3]], at: { line: 11, end: true, plus: 1.1 } }),
+  /* out of the open front door and along the hall behind the wall */
+  sij({ do: "walk", speed: 1.3, path: [[0.75, -0.8], [0.75, -1.85], [1.6, -2.05]], at: { line: 11, end: true, plus: 1.1 } }),
   shr({ do: "look", to: { hand: "Sijan.L" }, dur: 0.5, at: { line: 11, end: true, plus: 0.5 } }),
   shr({ do: "shake", times: 2, dur: 1.0, at: { line: 11, end: true, plus: 1.4 } }),
   shr({ do: "reach", hand: "R", to: { prop: "mug", off: [0, 0.0, 0] }, palm: "in", grip: 0.8, dur: 0.45, at: { line: 11, end: true, plus: 2.2 } }),
@@ -248,7 +250,8 @@ const shots: Shot3D[] = [
      pan across to the kitchen as she goes back, and the kitchen from there
      to the end — he leaves by the door in that shot. */
   { at: { t: 0 }, pos: [-0.3, 1.75, 6.7], look: [-0.3, 1.1, -0.6], fov: 40, to: { pos: [-0.5, 1.72, 6.3] } },
-  bedroom({ gap: 0, plus: 3.3 }, { glide: 1.6 }),
+  /* ease in once she has stopped walking, slowly: a 0.7 s push read as a lurch */
+  bedroom({ gap: 0, plus: 3.4 }, { glide: 2.8 }),
   kitchen({ gap: 6, plus: 0.8 }, { glide: 2.6 })
 ];
 
@@ -310,7 +313,8 @@ export const c001Acted: Acted = {
   },
   /* seconds of silence before each line, for the business that takes longer
      to do than to say; see the synopsis at the top */
-  gaps: { 0: 5.4, 6: 4.0, 8: 5.2, 10: 0.9 },
+  /* shorter than they were: the review measured 5-8 s silences here */
+  gaps: { 0: 4.4, 6: 3.4, 8: 4.4, 10: 0.9 },
   /* long enough for him to be out of the door before the Wortschatz card */
   tail: 5.0,
   props: {

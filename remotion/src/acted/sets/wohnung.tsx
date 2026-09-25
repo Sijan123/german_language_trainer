@@ -13,8 +13,9 @@
  *
  *                      camera, side-on, at +z
  *
- * Doors are drawn as dark openings on the back wall; walking through one is
- * walking behind the wall, which hides a person as it would.
+ * The doors are real openings in the wall, standing open, with a small room
+ * behind each (the bathroom, the hall). Going out of one is walking through
+ * it and then sideways behind the wall, out of sight.
  *
  * Both clocks — the alarm clock on the bedside table and the one on the
  * kitchen wall — say half past seven, which is line 0.
@@ -25,6 +26,7 @@ import * as THREE from "three";
 import { theme } from "../../theme";
 import { Model, toon, useModels } from "../models";
 import type { SetLayout, SetState } from "./index";
+import { Behind, DoorFrame, DoorLeaf, Wall } from "./walls";
 
 const b = theme.set.bedroom;
 const k = theme.set.kitchen;
@@ -34,6 +36,9 @@ const k = theme.set.kitchen;
 /* ------------------------------------------------------------------ */
 
 const WALL_Z = -1.5;
+/* the doorways in the back wall: the bathroom's and the front door */
+const BATH = { x: -0.9, w: 0.84, h: 2.04 };
+const FRONT = { x: 0.75, w: 0.9, h: 2.08 };
 const BED = { x0: -3.3, x1: -1.3, z0: -1.5, z1: -0.1, top: 0.5 };
 const TABLE = { x: -3.58, z: -0.36, top: 0.55 };
 /* forward of the back counter by a walkway, so she can get past behind it */
@@ -85,20 +90,6 @@ const Box: React.FC<{ at: [number, number, number]; size: [number, number, numbe
     <boxGeometry args={size} />
     <meshToonMaterial color={color} />
   </mesh>
-);
-
-/** A dark doorway on the back wall, with its frame. */
-const Doorway: React.FC<{ x: number; inside: string; w?: number }> = ({ x, inside, w = 0.84 }) => (
-  <group position={[x, 0, WALL_Z]}>
-    <mesh position={[0, 1.02, 0.012]}>
-      <planeGeometry args={[w, 2.04]} />
-      <meshBasicMaterial color={inside} />
-    </mesh>
-    {[-1, 1].map((s) => (
-      <Box key={s} at={[(s * (w + 0.06)) / 2, 1.04, 0.02]} size={[0.06, 2.08, 0.04]} color="#f1ede6" shadow={false} />
-    ))}
-    <Box at={[0, 2.08, 0.02]} size={[w + 0.12, 0.06, 0.04]} color="#f1ede6" shadow={false} />
-  </group>
 );
 
 /** A window on the back wall: frame, glass, a cross bar, curtains either side. */
@@ -169,7 +160,7 @@ const Bedroom: React.FC = () => {
     <group>
       {/* the wooden floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-2.2, 0.001, 0.5]} receiveShadow>
-        <planeGeometry args={[4.6, 5]} />
+        <planeGeometry args={[4.6, 4]} />
         <meshToonMaterial color={b.floor} />
       </mesh>
       {Array.from({ length: 24 }, (_, i) => (
@@ -178,11 +169,7 @@ const Bedroom: React.FC = () => {
           <meshBasicMaterial color={b.floorLine} />
         </mesh>
       ))}
-      <mesh position={[-2.2, 1.4, WALL_Z - 0.01]} receiveShadow>
-        <planeGeometry args={[4.8, 2.8]} />
-        <meshToonMaterial color={b.wall} />
-      </mesh>
-      <Box at={[-2.2, 0.05, WALL_Z + 0.01]} size={[4.8, 0.1, 0.02]} color={b.skirting} shadow={false} />
+      <Wall x0={-4.6} x1={0.05} z={WALL_Z} height={2.8} color={b.wall} openings={[BATH]} bands={[{ y0: 0, y1: 0.1, color: b.skirting, proud: 0.02 }]} />
 
       {/* the bed: frame, mattress, a thrown-back duvet, pillows, headboard */}
       <Box at={[bx, 0.17, bz]} size={[L, 0.24, W]} color={b.wood} />
@@ -224,8 +211,17 @@ const Bedroom: React.FC = () => {
         <planeGeometry args={[1.6, 0.8]} />
         <meshToonMaterial color={b.scarf} />
       </mesh>
-      {/* the bathroom, through its door: pale tiles */}
-      <Doorway x={-0.9} inside="#b8cdd6" />
+      {/* the bathroom, through its open door: pale tiles, a mirror, a towel */}
+      <DoorFrame x={BATH.x} w={BATH.w} h={BATH.h} z={WALL_Z} color="#f1ede6" />
+      <DoorLeaf x={BATH.x} w={BATH.w} h={BATH.h} z={WALL_Z} open={0.55} hinge="left" color="#f4f1ea" />
+      <Behind x={-1.2} w={2.2} z={WALL_Z - 0.1} depth={1.3} wall="#cfe0e6" floor="#e9eef0">
+        <mesh position={[-0.55, 1.45, WALL_Z - 1.39]}>
+          <planeGeometry args={[0.5, 0.6]} />
+          <meshBasicMaterial color="#e6f0f4" />
+        </mesh>
+        <Box at={[-0.55, 0.85, WALL_Z - 1.22]} size={[0.55, 0.12, 0.34]} color="#f4f4f2" />
+        <Box at={[-1.35, 1.2, WALL_Z - 1.37]} size={[0.3, 0.55, 0.03]} color="#c98270" />
+      </Behind>
     </group>
   );
 };
@@ -236,14 +232,14 @@ const Bedroom: React.FC = () => {
 
 const PLANT = { wood: "#c9b89a", woodDark: "#b3a283", plant: "#7f9a64" };
 
-const Kitchen: React.FC<{ m: Record<string, THREE.Group> }> = ({ m }) => {
+export const Kitchen: React.FC<{ m: Record<string, THREE.Group> }> = ({ m }) => {
   const ix = (ISLAND.x0 + ISLAND.x1) / 2;
   const iz = (ISLAND.z0 + ISLAND.z1) / 2;
   return (
     <group>
       {/* tiled floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2.35, 0.001, 0.5]} receiveShadow>
-        <planeGeometry args={[4.5, 5]} />
+        <planeGeometry args={[4.5, 4]} />
         <meshToonMaterial color={k.floor} />
       </mesh>
       {Array.from({ length: 11 }, (_, i) => (
@@ -258,10 +254,7 @@ const Kitchen: React.FC<{ m: Record<string, THREE.Group> }> = ({ m }) => {
           <meshBasicMaterial color={k.counter} />
         </mesh>
       ))}
-      <mesh position={[2.35, 1.4, WALL_Z - 0.01]} receiveShadow>
-        <planeGeometry args={[4.6, 2.8]} />
-        <meshToonMaterial color={k.wall} />
-      </mesh>
+      <Wall x0={0.15} x1={4.6} z={WALL_Z} height={2.8} color={k.wall} openings={[FRONT]} />
       {/* tiles behind the worktop */}
       <mesh position={[(BACK.x0 + BACK.x1) / 2, 1.18, WALL_Z]}>
         <planeGeometry args={[BACK.x1 - BACK.x0, 0.56]} />
@@ -295,8 +288,14 @@ const Kitchen: React.FC<{ m: Record<string, THREE.Group> }> = ({ m }) => {
         </mesh>
       ))}
       <WallClock />
-      {/* the flat's front door, next to the partition */}
-      <Doorway x={0.75} inside="#6d6a63" w={0.9} />
+      {/* the flat's front door, next to the partition, open onto the hall */}
+      <DoorFrame x={FRONT.x} w={FRONT.w} h={FRONT.h} z={WALL_Z} color="#f1ede6" />
+      <DoorLeaf x={FRONT.x} w={FRONT.w} h={FRONT.h} z={WALL_Z} open={0.5} hinge="right" color="#8a6a4a" />
+      <Behind x={1.3} w={2.4} z={WALL_Z - 0.1} depth={1.3} wall="#d9d2c3" floor="#b9a78c">
+        {/* coats on hooks in the hall */}
+        <Box at={[0.75, 1.5, WALL_Z - 1.36]} size={[0.3, 0.7, 0.08]} color="#5c6f86" />
+        <Box at={[1.15, 1.45, WALL_Z - 1.36]} size={[0.28, 0.6, 0.08]} color="#b07a63" />
+      </Behind>
       <Model model={m.pottedPlant} at={[3.75, 0.2]} yaw={-Math.PI / 2} paint={PLANT} scale={1.6} />
 
       {/* the island they talk across */}

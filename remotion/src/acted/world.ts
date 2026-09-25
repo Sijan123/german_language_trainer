@@ -67,7 +67,15 @@ const CARRY: Record<PropKind, Xform> = {
   /* a mug held round its body with the palm facing in: the mug's up is the
      hand's z, which is up for a right hand held that way */
   mug: xbasis([0.06, 0.045, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0]),
-  key: { p: [0.07, 0.006, 0], q: QI }
+  key: { p: [0.07, 0.006, 0], q: QI },
+  /* the supermarket: the basket hangs from its handle like the bakery bag */
+  basket: xbasis([0.26, 0.0, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0]),
+  carton: xbasis([0.06, 0.045, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0]),
+  jar: xbasis([0.06, 0.045, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0]),
+  eggs: { p: [0.08, 0.045, 0], q: QI },
+  tomato: { p: [0.055, 0.035, 0], q: QI },
+  phone: { p: [0.07, 0.01, 0], q: QI },
+  note: { p: [0.08, 0.004, 0], q: QI }
 };
 
 /** Prop sizes: long side, thickness, short side. */
@@ -91,7 +99,16 @@ export const PROP_SIZE: Record<PropKind, Vec3> = {
   sandwich: [0.11, 0.045, 0.1],
   lunchbox: [0.19, 0.07, 0.13],
   mug: [0.09, 0.1, 0.08],
-  key: [0.08, 0.006, 0.03]
+  /* bigger than life, so it reads in the master and the ring has something to ring */
+  key: [0.11, 0.008, 0.042],
+  /* the supermarket; the basket, carton and jar stand up (middle number is height) */
+  basket: [0.42, 0.22, 0.28],
+  carton: [0.07, 0.2, 0.07],
+  eggs: [0.26, 0.07, 0.11],
+  tomato: [0.065, 0.06, 0.065],
+  jar: [0.075, 0.1, 0.075],
+  phone: [0.15, 0.009, 0.072],
+  note: [0.15, 0.001, 0.1]
 };
 
 export type PropState = { x: Xform; visible: boolean; open: number };

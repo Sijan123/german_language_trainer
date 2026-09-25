@@ -232,6 +232,14 @@ export type Look3D = {
    * are its own, so they should agree with the fields above.
    */
   model?: string;
+  /**
+   * A model whose limbs are not the rig's (a downloaded avatar) says so here,
+   * in metres for a 1.76 m person (they are scaled by height like the rest):
+   * the rig then solves with its lengths, so an arm is not stretched to fit.
+   * Keys are those of P in rig.ts: upper, fore, thigh, shin, spine,
+   * shoulderHalf, hipHalf, ankle, pelvisStand, headUp.
+   */
+  proportions?: Partial<Record<"upper" | "fore" | "thigh" | "shin" | "spine" | "shoulderHalf" | "hipHalf" | "ankle" | "pelvisStand" | "headUp" | "neck", number>>;
 };
 
 export type Start = {
@@ -271,7 +279,9 @@ export type PropKind =
   /* the bakery */
   | "roll" | "loaf" | "bag" | "box" | "slice" | "wallet" | "card" | "coins"
   /* the flat */
-  | "clock" | "sandwich" | "lunchbox" | "mug" | "key";
+  | "clock" | "sandwich" | "lunchbox" | "mug" | "key"
+  /* the supermarket */
+  | "basket" | "carton" | "eggs" | "tomato" | "jar" | "phone" | "note";
 
 export type Acted = {
   /** a key of SETS3D in acted/sets */

@@ -278,7 +278,8 @@ const beats: Beat[] = [
 /* ------------------------------------------------------------------ */
 
 /* A side-on master across the desk, and cuts for the business. */
-const MASTER = { pos: [-0.05, 1.28, 4.0], look: [-0.05, 1.0, -0.05], fov: 30 } as const;
+/* lower and tighter than the pilot's, so the faces are bigger */
+const MASTER = { pos: [-0.12, 1.26, 3.65], look: [-0.05, 1.09, -0.05], fov: 28 } as const;
 const master = (at: Shot3D["at"], extra: Partial<Shot3D> = {}): Shot3D => ({
   at, pos: [...MASTER.pos], look: [...MASTER.look], fov: MASTER.fov, ...extra
 });
@@ -353,7 +354,7 @@ export const c010Acted: Acted = {
   callouts: {
     2: { at: "clock", label: "zehn Uhr", word: "Uhr", size: [0.22, 0.22] },
     4: { at: "passport", label: "der Pass", word: "Pass", size: [0.08, 0.07] },
-    5: { at: "folder", label: "die Wohnungsgeberbestätigung", word: "Wohnungsgeberbestätigung", size: [0.17, 0.08] },
+    5: { at: "folder", label: "die Wohnungsgeber-\nbestätigung", word: "Wohnungsgeberbestätigung", size: [0.17, 0.08] },
     9: { at: "form", label: "das Formular", word: "Formular", size: [0.16, 0.1] }
   }
 };

@@ -18,9 +18,14 @@
  */
 
 import type { Scene } from "../types";
+import { c002Acted } from "./c002.acted";
 
 export const c002: Scene = {
   id: "c002",
+
+  /* Played in 3D, with the test avatar as Sijan: see c002.acted.ts. Delete
+     this line and the film goes back to the drawn staging below. */
+  acted: c002Acted,
 
   rooms: [
     { set: "supermarkt", from: 0, to: 960 },

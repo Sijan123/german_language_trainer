@@ -248,7 +248,7 @@ export type Program = {
 /* Seconds. Each looked right in a test render; they are defaults, and a beat
    that wants a slower sit or a quicker glance says so. */
 const DUR: Record<string, number> = {
-  step: 0.8, turn: 0.5, sit: 1.15, stand: 1.05, scoot: 0.5, lean: 0.6, twist: 0.6,
+  step: 0.8, turn: 0.5, sit: 1.4, stand: 1.3, scoot: 0.5, lean: 0.6, twist: 0.6,
   look: 0.32, nod: 0.75, shake: 0.8, smile: 0.4, brows: 0.25, eyes: 0.25,
   reach: 0.7, rest: 0.6, gesture: 1.3, jacket: 0.35, open: 0.55, chair: 0.7,
   screen: 0.9, take: 0, put: 0, stow: 0, display: 0, sound: 0, type: 1, scribble: 1, tap: 0.6, room: 0.4
@@ -410,7 +410,14 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
         for (let i = 1; i < pts.length; i++) D += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
         if (D < 0.01) break;
         const speed = b.speed ?? 1.1;
-        f1 = f0 + sec(D / speed + 0.5);
+        /* long enough to finish turning into the walk and out of it (at the
+           rig's 0.32 s per radian): a short walk with a big turn otherwise
+           snapped round on its last frame */
+        const head0 = Math.atan2(-(pts[1][1] - pts[0][1]), pts[1][0] - pts[0][0]);
+        const headN = Math.atan2(-(pts[pts.length - 1][1] - pts[pts.length - 2][1]), pts[pts.length - 1][0] - pts[pts.length - 2][0]);
+        const faceEnd = b.face ?? headN;
+        const turning = Math.abs(angleDiff(p.yaw.at(f0), head0)) + Math.abs(angleDiff(headN, faceEnd));
+        f1 = f0 + sec(Math.max(D / speed + 0.5, 0.32 * turning + 0.5));
         const last = pts[pts.length - 1];
         const prev = pts[pts.length - 2];
         const face = b.face ?? Math.atan2(-(last[1] - prev[1]), last[0] - prev[0]);
@@ -432,6 +439,9 @@ export function compile(acted: Acted, d: Dialogue, set: SetLayout): Program {
       case "sit": {
         p.seats.push({ f: f0, chair: b.chair });
         p.sit.moveTo(f0, f1, 1);
+        /* sitting down squares you up with the chair (a chair turned towards
+           the camera turns its sitter with it) */
+        p.yaw.moveTo(f0, f1, set.chairs[b.chair].yaw);
         sounds.push({ f: f1 - sec(0.25), name: "chair", volume: 0.25 });
         break;
       }
