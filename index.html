@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="css/style.css?v=2026-09-18c">
+<link rel="stylesheet" href="css/style.css?v=2026-10-06a">
 
 </head>
 <body>
@@ -265,15 +265,34 @@
 
   <!-- ============ GRAMMATIK ============ -->
   <section id="screen-grammar" hidden>
-    <p class="vocab-hint">A2-Grammatik nach Themen. Auf ein Thema tippen: Regel, Muster, Beispielsätze und der Fehler, den man dabei typischerweise macht.</p>
-    <div class="grammar-list" id="grammar-list"></div>
+
+    <!-- Two ways into the same grammar. "Themen" is for looking something up —
+         it is what a vocabulary chip links to. "Kurs" is for working through it
+         in the order a course book teaches it. Neither replaces the other. -->
+    <div class="theme-chips seg-chips" id="grammar-sub" role="group" aria-label="Grammatik">
+      <button type="button" data-gsub="themen" aria-pressed="true">Themen</button>
+      <button type="button" data-gsub="kurs" aria-pressed="false">Kurs A2.1</button>
+    </div>
+
+    <div id="grammar-themen">
+      <p class="vocab-hint">A2-Grammatik nach Themen. Auf ein Thema tippen: Regel, Muster, Beispielsätze und der Fehler, den man dabei typischerweise macht.</p>
+      <div class="grammar-list" id="grammar-list"></div>
+    </div>
+
+    <div id="gk-root" hidden>
+      <p class="vocab-hint">Der Grammatikkurs folgt <strong>Schritte plus Neu 3 (A2.1)</strong> — dieselben sieben Lektionen, dieselben Lernschritte&nbsp;A bis&nbsp;E, dieselbe Grammatik in derselben Reihenfolge. Jede Lektion hat außerdem eine <strong>Vertiefung</strong> aus den anderen A2.1-Lehrwerken und einen <strong>Test</strong> mit Auswahlmenüs. Eine falsche Lücke bekommt zuerst nur den Hinweis mit einem Beispiel — die Antwort erst, wenn du auf <em>Antwort zeigen</em> drückst.</p>
+      <div class="gk-chips" id="gk-chips"></div>
+      <div id="gk-body"></div>
+      <div class="gk-sources" id="gk-sources"></div>
+    </div>
+
   </section>
 
   <footer class="hint">Alles läuft lokal — die Gespräche, die Vokabeln, die Sprachausgabe und dein Lernfortschritt. Nichts verlässt deinen Rechner.
-    <span class="build">Build 2026-09-18c · Gespräch als Film</span>
+    <span class="build">Build 2026-10-06a · Grammatikkurs A2.1</span>
   </footer>
 </div>
 
-<script type="module" src="js/app.js?v=2026-09-13l"></script>
+<script type="module" src="js/app.js?v=2026-10-06a"></script>
 </body>
 </html>

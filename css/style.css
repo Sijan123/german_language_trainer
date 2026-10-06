@@ -521,6 +521,10 @@ select { font-family: inherit; font-size: .84rem; padding: 8px 10px; border-radi
 .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--ink-soft); border-color: var(--border); }
 .btn-ghost:hover { color: var(--ink); }
+/* Revealing an answer is destructive - it spends the question. The button says
+   so, in the same red the app already uses for a wrong answer. */
+.btn-danger { background: transparent; color: var(--bad); border-color: var(--bad); font-weight: 600; }
+.btn-danger:hover { background: var(--bad); color: var(--surface); }
 
 .feedback { margin-top: 16px; border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border-soft); }
 .feedback.ok { background: var(--good-soft); border-color: var(--good); }
@@ -773,4 +777,186 @@ select:focus-visible,
    it away would send the one button you press all dialogue back off screen. */
 @media (prefers-reduced-motion: reduce) {
   .wchip, .quiz-opt, .dlg-role { transition: none; }
+}
+
+/* ---------- Grammatik: Kurs (Schritte plus Neu 3 / A2.1) ---------- */
+
+/* --- Kapitelauswahl --- */
+.gk-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+.gk-chips button { font-family: inherit; font-size: .78rem; font-weight: 600; cursor: pointer;
+                   display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+                   padding: 8px 13px; border-radius: 11px; text-align: left;
+                   border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft);
+                   border-left: 3px solid var(--tone, var(--accent)); }
+.gk-chips button:hover { border-color: var(--tone, var(--accent)); color: var(--ink); }
+.gk-chips button[aria-pressed="true"] { background: var(--tone, var(--accent)); border-color: var(--tone, var(--accent));
+                                        color: var(--surface); }
+.gk-chip-title { font-weight: 500; font-size: .74rem; opacity: .85; }
+
+/* --- Kapitelkopf --- */
+.gk-chapter { display: flex; flex-direction: column; gap: 14px; }
+.gk-chapter-head { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px;
+                   border-left: 4px solid var(--tone); padding: 16px 18px; }
+.gk-kicker { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; text-transform: uppercase;
+             letter-spacing: .07em; color: var(--ink-faint); }
+.gk-chapter-head h3 { font-family: 'Fraunces', Georgia, serif; font-size: 1.3rem; font-weight: 600;
+                      color: var(--tone); margin: 4px 0 0; display: flex; flex-wrap: wrap;
+                      align-items: baseline; gap: 9px; }
+.gk-chapter-head h3 small { font-family: 'IBM Plex Sans', sans-serif; font-size: .82rem; font-weight: 400;
+                            color: var(--ink-faint); }
+.gk-focus { font-size: .88rem; color: var(--ink-soft); margin: 7px 0 0; }
+.gk-chapter-meta { font-family: 'IBM Plex Mono', monospace; font-size: .7rem; color: var(--ink-faint);
+                   margin: 7px 0 0; }
+
+/* --- Lernen / Test --- */
+.gk-sub { display: flex; gap: 6px; }
+.gk-sub button { font-family: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+                 border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft);
+                 border-radius: 999px; padding: 7px 17px; min-height: 36px; }
+.gk-sub button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* --- Ein Lernschritt --- */
+.gk-steps { display: flex; flex-direction: column; gap: 12px; }
+.gk-step { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px;
+           padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.gk-step[data-kind="wortschatz"] { background: var(--surface-sunken); }
+.gk-step-head { display: flex; align-items: flex-start; gap: 11px; }
+.gk-step-letter { flex: none; width: 27px; height: 27px; border-radius: 8px; display: grid; place-items: center;
+                  background: var(--tone); color: var(--surface); font-weight: 700; font-size: .85rem;
+                  font-family: 'IBM Plex Mono', monospace; }
+.gk-step-letter.gk-plus { background: var(--accent-soft); color: var(--accent); }
+.gk-step-titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gk-step-title { font-family: 'Fraunces', Georgia, serif; font-size: 1rem; font-weight: 600;
+                 margin: 0; color: var(--ink); }
+.gk-step-grammar { font-size: .8rem; font-weight: 600; color: var(--tone); }
+.gk-step-kind { font-size: .76rem; color: var(--ink-faint); }
+.gk-goal { font-size: .82rem; color: var(--ink-soft); margin: 0; }
+.gk-goal span { font-family: 'IBM Plex Mono', monospace; font-size: .66rem; text-transform: uppercase;
+                letter-spacing: .06em; background: rgba(127,127,127,.16); border-radius: 5px;
+                padding: 2px 6px; margin-right: 7px; }
+.gk-summary { font-size: .9rem; line-height: 1.62; margin: 0; }
+.gk-notes { margin: 0; padding-left: 19px; display: flex; flex-direction: column; gap: 6px; }
+.gk-notes li { font-size: .85rem; line-height: 1.55; color: var(--ink-soft); }
+.gk-source { font-size: .75rem; color: var(--ink-faint); margin: 0; font-style: italic; }
+.gk-deepen { border-style: dashed; border-color: var(--border); }
+.gk-deepen-head { font-family: 'Fraunces', Georgia, serif; font-size: 1.05rem; font-weight: 600;
+                  margin: 10px 0 0; display: flex; flex-direction: column; gap: 2px; color: var(--ink); }
+.gk-deepen-head small { font-family: 'IBM Plex Sans', sans-serif; font-size: .78rem; font-weight: 400;
+                        color: var(--ink-faint); }
+
+/* --- Tabellen --- */
+/* A paradigm is a table and deserves to be one. On a phone it scrolls
+   sideways rather than reflowing: a wrapped conjugation stops being readable. */
+.gk-table-wrap { margin: 0; }
+.gk-table-wrap figcaption { font-family: 'IBM Plex Mono', monospace; font-size: .68rem;
+                            text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint);
+                            margin-bottom: 5px; }
+.gk-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch;
+                   border: 1px solid var(--border-soft); border-radius: 9px; }
+.gk-table { border-collapse: collapse; width: 100%; font-size: .83rem; }
+.gk-table th, .gk-table td { text-align: left; padding: 7px 11px; border-bottom: 1px solid var(--border-soft);
+                             vertical-align: top; }
+.gk-table thead th { background: var(--surface-sunken); font-weight: 600; font-size: .76rem;
+                     color: var(--ink-soft); white-space: nowrap; }
+.gk-table tbody tr:last-child td { border-bottom: none; }
+.gk-table tbody td:first-child { color: var(--ink-soft); white-space: nowrap; }
+.gk-table b { color: var(--tone, var(--accent)); font-weight: 600; }
+.gk-table em { color: var(--ink-faint); font-size: .95em; }
+
+/* --- Querverweise --- */
+.gk-topic-link { align-self: flex-start; font-family: inherit; font-size: .76rem; font-weight: 600;
+                 background: var(--accent-soft); color: var(--accent); border: none; border-radius: 999px;
+                 padding: 7px 13px; min-height: 34px; cursor: pointer; }
+.gk-topic-link:hover { background: var(--accent); color: var(--accent-ink); }
+.grammar-kurs-links { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.grammar-kurs-links > span { font-family: 'IBM Plex Mono', monospace; font-size: .66rem;
+                             text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); }
+.gk-jump { font-family: inherit; font-size: .75rem; font-weight: 600; cursor: pointer;
+           background: var(--surface-sunken); color: var(--ink-soft); border: 1px solid var(--border);
+           border-radius: 999px; padding: 6px 12px; min-height: 32px; }
+.gk-jump:hover { border-color: var(--accent); color: var(--accent); }
+
+/* --- Der Test --- */
+.gk-test { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px;
+           padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.gk-test-head h3 { font-family: 'Fraunces', Georgia, serif; font-size: 1.1rem; font-weight: 600; margin: 0; }
+.gk-test-note { font-size: .84rem; line-height: 1.55; color: var(--ink-soft); margin: 6px 0 0; }
+.gk-qs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px;
+         counter-reset: gkq; }
+.gk-q { padding: 12px 13px; border-radius: 10px; border: 1px solid transparent;
+        border-left: 3px solid var(--border-soft); counter-increment: gkq; }
+.gk-q[data-state="bad"] { background: var(--bad-soft); border-left-color: var(--bad); }
+.gk-q[data-state="ok"] { border-left-color: var(--good); }
+.gk-q[data-state="revealed"] { border-left-color: var(--warm); background: var(--warm-soft); }
+.gk-q-line { font-size: .96rem; line-height: 2.1; }
+.gk-q-line::before { content: counter(gkq) ". "; font-family: 'IBM Plex Mono', monospace;
+                     font-size: .76rem; color: var(--ink-faint); }
+.gk-q-en { font-size: .84rem; color: var(--ink-faint); margin: 3px 0 0; }
+
+/* The gap itself. Sized to its longest option so the width never hints at
+   which one is right, and never full-width like the other selects. */
+.gk-gap { width: auto; min-width: calc(var(--ch) + 2.6rem); display: inline-block;
+          font-size: .89rem; padding: 4px 7px; margin: 0 1px; vertical-align: baseline;
+          background: var(--surface); border: 1px solid var(--accent); border-radius: 7px;
+          color: var(--ink); font-weight: 600; }
+.gk-gap:disabled { opacity: 1; }
+.gk-gap[data-state="ok"] { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.gk-gap[data-state="bad"] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+.gk-gap[data-state="revealed"] { background: var(--warm-soft); border-color: var(--warm); color: var(--warm);
+                                 font-style: italic; }
+
+/* --- Hinweis statt Antwort --- */
+/* A wrong gap gets the rule and a worked example. The answer is behind the red
+   button, and nothing in here leaks it. */
+.gk-q-hint { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px;
+             background: var(--surface); border: 1px solid var(--bad); border-radius: 10px;
+             padding: 11px 13px; }
+.gk-hint-body { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 5px; }
+.gk-hint-tip, .gk-hint-ex { margin: 0; font-size: .85rem; line-height: 1.55; }
+.gk-hint-ex { color: var(--ink-soft); }
+.gk-hint-ex b { color: var(--accent); font-weight: 600; }
+.gk-hint-tip b { font-weight: 600; }
+.gk-hint-label { font-family: 'IBM Plex Mono', monospace; font-size: .64rem; text-transform: uppercase;
+                 letter-spacing: .06em; background: rgba(127,127,127,.16); border-radius: 5px;
+                 padding: 2px 6px; margin-right: 7px; white-space: nowrap; }
+.gk-revealed-note { flex: 1; min-width: 200px; margin: 0; font-size: .8rem; color: var(--warm); }
+
+/* --- Punktestand --- */
+.gk-test-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.gk-score { font-size: .85rem; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+            border-radius: 10px; padding: 11px 13px; background: var(--surface-sunken);
+            border: 1px solid var(--border); color: var(--ink-soft); }
+.gk-score[data-tone="ok"] { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.gk-score[data-tone="bad"] { background: var(--bad-soft); border-color: var(--bad); }
+.gk-count { font-family: 'IBM Plex Mono', monospace; font-size: .74rem; font-weight: 500;
+            border-radius: 6px; padding: 3px 8px; background: rgba(127,127,127,.14); }
+.gk-count-ok { background: var(--good-soft); color: var(--good); }
+.gk-count-bad { background: var(--bad-soft); color: var(--bad); }
+.gk-count-rev { background: var(--warm-soft); color: var(--warm); }
+.gk-score-note { flex: 1; min-width: 180px; font-size: .82rem; }
+
+/* --- Quellen --- */
+.gk-sources { margin-top: 20px; }
+.gk-sources-toggle { font-family: inherit; font-size: .78rem; font-weight: 600; cursor: pointer;
+                     background: none; border: 1px solid var(--border); border-radius: 999px;
+                     color: var(--ink-soft); padding: 8px 15px; min-height: 36px; }
+.gk-sources-toggle:hover { color: var(--ink); border-color: var(--accent); }
+.gk-sources-body { margin-top: 10px; background: var(--surface); border: 1px solid var(--border-soft);
+                   border-radius: 12px; padding: 14px 16px; }
+.gk-sources-body ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.gk-sources-body li { display: flex; flex-direction: column; gap: 2px; }
+.gk-sources-body a { font-size: .89rem; font-weight: 600; color: var(--accent); }
+.gk-src-pub { font-family: 'IBM Plex Mono', monospace; font-size: .68rem; color: var(--ink-faint); }
+.gk-src-role { font-size: .83rem; color: var(--ink-soft); line-height: 1.5; }
+
+@media (max-width: 560px) {
+  .gk-step, .gk-test, .gk-chapter-head { padding: 14px; }
+  .gk-chips button { flex: 1 1 auto; }
+  .gk-test-actions { flex-direction: column-reverse; }
+  .gk-test-actions .btn { width: 100%; }
+  .gk-q-line { line-height: 2.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gk-chips button, .gk-gap, .gk-jump, .gk-topic-link { transition: none; }
 }

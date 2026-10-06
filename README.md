@@ -51,7 +51,7 @@ them through Jekyll.
 ## Layout
 
 ```
-index.html              the whole UI — four sections, one per mode
+index.html              the whole UI — one section per mode
 css/style.css           one stylesheet, light and dark via CSS custom properties
 js/
   app.js                modes, state, Gespräche, Vokabeln, Quiz, Grammatik
@@ -64,7 +64,9 @@ js/
   conversations.js      108 dialogues, 1352 turns, 16 topics
   vocab.js              1009 words in 20 themes
   sentences-en.js       English for every example sentence and main clause
-  grammar-topics.js     24 grammar topics with examples
+  grammar-topics.js     24 grammar topics with examples (the Themen half)
+  grammar-course.js     the A2.1 course: 7 chapters, 35 Lernschritte, 145 test gaps
+  grammar-kurs.js       Grammatik · Kurs: the chapter screen and the test marking
   speech.js             German text-to-speech
   clips.js              where a dialogue line's rendered audio lives
   video-manifest.js     which dialogues have a rendered film (written by the renderer)
@@ -454,6 +456,92 @@ same thing to have learnt. Keys carry the mode — `v:` for a vocabulary word,
 Everything lives in one `localStorage` key, `a2trainer.srs.v1`, so it is
 per-browser and never leaves the machine. *Lernfortschritt löschen* in the Quiz
 bar wipes it, and asks first.
+
+## Grammatik · Kurs
+
+The Grammatik screen has two halves, and they are different jobs.
+
+**Themen** is the original: 24 structures you look something up in. A vocabulary
+word's grammar chip links straight into it, so it has to stay a flat list that
+can be jumped into at any point. Nothing in it says what to learn first, because
+nothing in it should.
+
+**Kurs A2.1** is the other job. It follows [Schritte plus Neu
+3](https://www.hueber.de/schritte-plus-neu) chapter by chapter — the same seven
+Lektionen, the same Lernschritte A to E, the same grammar in the same order,
+under the book's own headings. Someone working through the actual book opens the
+matching chapter and finds the same material, written longer: the rule, the
+paradigm as a real table, example sentences you can play, and the one mistake
+that structure invites.
+
+| Lektion | Grammatik |
+|---|---|
+| 1 Ankommen | Nebensätze mit *weil* · Perfekt der trennbaren Verben · Perfekt der nicht trennbaren Verben und der Verben auf *-ieren* |
+| 2 Zu Hause | Positionsverben + Wechselpräpositionen mit **Dativ** · Richtungsverben + Wechselpräpositionen mit **Akkusativ** · Direktionaladverbien |
+| 3 Essen und Trinken | Häufigkeitsangaben · Indefinitpronomen *(k)einer, (k)eins, welche* |
+| 4 Arbeitswelt | Nebensätze mit *wenn* · Konjunktiv II von *sollen* |
+| 5 Sport und Fitness | Reflexive Verben · Verben mit Präpositionen · Fragewörter und Präpositionaladverbien |
+| 6 Schule und Ausbildung | Präteritum der Modalverben · Nebensätze mit *dass* |
+| 7 Feste und Geschenke | Possessivartikel im Dativ · Stellung der Objekte · *von* + Dativ |
+
+Steps that teach a skill rather than a structure — D TELEFONGESPRÄCHE AM
+ARBEITSPLATZ — are kept and show Redemittel instead of a paradigm. Dropping them
+would renumber the chapter and break the promise that this is the same book.
+
+### Vertiefung
+
+A2.1 is taught by several books at once and they do not agree on what belongs at
+this level: Menschen A2 teaches Adjektivdeklination and *deshalb* where Schritte 3
+does not, and Schritte 3 teaches Direktionaladverbien where Menschen does not. So
+each chapter carries a second layer drawn from the parallel books — and it sits
+under the *same topic*, never in a chapter of its own. *weil* in Lektion 1 pulls
+in *denn* and *deshalb*; Wechselpräpositionen in Lektion 2 pull in the full verb
+pairs and the closed lists of fixed prepositions. Learn the chapter, then go
+deeper on the same thing.
+
+Every block names its source, and the Lernmaterial panel at the foot of the
+screen lists all seven references with links.
+
+### The test, and why it will not tell you the answer
+
+Each chapter ends in a test of 20 to 22 drop-down gaps. A select rather than a
+text field on purpose: this is a grammar test, not a spelling test, and typing
+`vermise` should not read as a grammar mistake. Options are shuffled on every
+render, so position never carries information.
+
+Marking happens only on **Prüfen**, and it is deliberately stingy:
+
+| State | What happens |
+|---|---|
+| right | green, and the gap locks — there is nothing left to do with it |
+| wrong | red, keeps every option, and opens a **Hinweis** underneath |
+| gezeigt | amber and italic, filled in, counted separately |
+
+The Hinweis is the rule in one line plus one worked example of the same
+structure **in different words**, so the example cannot be copied into the gap —
+it has to be applied. The answer is not in there. It is behind **Antwort
+zeigen**, in red, styled as the destructive action it is, and a gap opened that
+way is counted apart from the ones you earned. The footer keeps the three
+numbers visible: *richtig*, *falsch*, *offen*, *gezeigt*. A score that folds
+revealed answers into the total is a score that lies to you.
+
+This is enforced, not just intended. Items carry a `rule` id rather than their
+own hint text — so *weil* in Lektion 1 and *weil* in Lektion 6 explain
+themselves identically and cannot drift — and a check over all 145 items
+asserts that no hint ever names its own gap's answer. Naming a *distractor* is
+allowed and often the point: half the hints eliminate one by showing it marked
+as the other case.
+
+Nothing is persisted. Grammar practice is not vocabulary — there is no interval
+worth tracking, and a half-finished test that survives a reload is a
+half-finished test you will never finish. **Nochmal** clears every mark,
+including the revealed ones, and reshuffles the options.
+
+### The two halves link to each other
+
+A course step that matches a Themen card offers *Thema nachschlagen →*; a Themen
+card that the course teaches lists the chapters that drill it. The mapping is
+derived from the data, so neither side can go stale.
 
 ## Readability and contrast
 

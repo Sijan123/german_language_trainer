@@ -11,6 +11,8 @@ import * as srs from "./srs.js";
 import { initDictation, enterDictation, leaveDictation } from "./dictation.js";
 import { initWordOrder, enterWordOrder } from "./wordorder.js";
 import { initDialogue, enterDialogue, leaveDialogue } from "./dialogue.js";
+import { initGrammarKurs, renderGrammarKurs, openLektion } from "./grammar-kurs.js";
+import { lektionenForTopic } from "./grammar-course.js";
 import {
   initVoices, sayLine, sayLineOnce, sayOnce, voiceLabels,
   stopSpeaking, pauseSpeaking, resumeClip
@@ -31,6 +33,7 @@ const state = {
   // "manual" stops after every line, "auto" runs on, "video" plays the film
   convMode: "manual",
   woSub: "sentences",       // Satzbau: "sentences" drill or "dialogue" role-play
+  gSub: "themen",           // Grammatik: "themen" reference or "kurs" A2.1 course
   showEn: true              // show the English under every German line
 };
 
@@ -98,6 +101,9 @@ const el = {
   quizNext: $("quiz-next"),
 
   screenGrammar: $("screen-grammar"),
+  grammarSub: $("grammar-sub"),
+  grammarThemen: $("grammar-themen"),
+  grammarKurs: $("gk-root"),
   grammarList: $("grammar-list")
 };
 
@@ -129,7 +135,7 @@ function setMode(mode) {
   if (mode === "vocab") renderVocab();
   if (mode === "quiz") { if (quiz.word) renderQuiz(); else nextQuestion(); }
   if (mode === "wordorder") setWordOrderSub(state.woSub);
-  if (mode === "grammar") renderGrammar();
+  if (mode === "grammar") setGrammarSub(state.gSub);
 }
 
 /*
@@ -561,6 +567,50 @@ el.modeTabs.addEventListener("click", (event) => {
 /* Grammatik                                                           */
 /* ------------------------------------------------------------------ */
 
+/*
+ * Grammatik has two halves and they are genuinely different jobs: Themen is a
+ * reference you jump into from a vocabulary chip, Kurs is a syllabus you work
+ * through. Switching between them is cheap because both are already rendered.
+ */
+function setGrammarSub(sub) {
+  state.gSub = sub;
+  document.body.dataset.gSub = sub;
+  Array.prototype.forEach.call(el.grammarSub.querySelectorAll("button"), (b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.gsub === sub));
+  });
+  el.grammarThemen.hidden = sub !== "themen";
+  el.grammarKurs.hidden = sub !== "kurs";
+  if (sub === "themen") renderGrammar();
+  else renderGrammarKurs();
+}
+
+el.grammarSub.addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-gsub]");
+  if (btn) setGrammarSub(btn.dataset.gsub);
+});
+
+/*
+ * A reference card is better when it says where the structure is actually
+ * taught, so each one that appears in the A2.1 course offers the chapters that
+ * drill it. Cards with no chapter — the course covers seven lessons, not all
+ * of A2 — simply get nothing.
+ */
+function kursLinks(topicId) {
+  const hits = lektionenForTopic(topicId);
+  if (!hits.length) return "";
+  const seen = new Set();
+  const btns = hits.filter((h) => {
+    const key = h.nr + h.letter;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).map((h) =>
+    '<button type="button" class="gk-jump" data-lektion="' + h.nr + '">' +
+      'Lektion ' + h.nr + ' ' + h.letter + ' · ' + escapeHtml(h.title) +
+    '</button>').join("");
+  return '<div class="grammar-kurs-links"><span>Im Kurs A2.1</span>' + btns + '</div>';
+}
+
 function renderGrammar() {
   if (el.grammarList.dataset.rendered === "true") return;   // static content
   el.grammarList.innerHTML = GRAMMAR.map((g) => {
@@ -583,6 +633,7 @@ function renderGrammar() {
         '<div class="grammar-pattern">' + escapeHtml(g.pattern) + '</div>' +
         '<div class="grammar-examples">' + examples + '</div>' +
         '<div class="grammar-watch"><strong>Achtung:</strong> ' + escapeHtml(g.watch) + '</div>' +
+        kursLinks(g.id) +
       '</div>' +
     '</div>';
   }).join("");
@@ -592,6 +643,15 @@ function renderGrammar() {
 el.grammarList.addEventListener("click", (event) => {
   const sayBtn = event.target.closest(".speak-btn");
   if (sayBtn) { event.stopPropagation(); sayOnce(sayBtn.dataset.say, "Shruti", true); return; }
+
+  const jump = event.target.closest(".gk-jump");
+  if (jump) {
+    event.stopPropagation();
+    setGrammarSub("kurs");
+    openLektion(jump.dataset.lektion);
+    el.grammarKurs.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
 
   const head = event.target.closest(".grammar-head");
   if (!head) return;
@@ -606,6 +666,7 @@ el.grammarList.addEventListener("click", (event) => {
 /** Jump from a vocab word's topic chip straight to that grammar topic. */
 function openGrammarTopic(id) {
   setMode("grammar");
+  setGrammarSub("themen");
   const item = document.getElementById("g-" + id);
   if (!item) return;
   const body = item.querySelector(".grammar-body");
@@ -1306,6 +1367,9 @@ initDialogue({
   getMode: () => state.mode,
   getSub: () => state.woSub,
   isSoundOn: () => state.ttsOn
+});
+initGrammarKurs({
+  openTopic: openGrammarTopic
 });
 
 document.body.dataset.hideEn = state.showEn ? "false" : "true";
