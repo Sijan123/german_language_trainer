@@ -75,7 +75,15 @@ const CARRY: Record<PropKind, Xform> = {
   eggs: { p: [0.08, 0.045, 0], q: QI },
   tomato: { p: [0.055, 0.035, 0], q: QI },
   phone: { p: [0.07, 0.01, 0], q: QI },
-  note: { p: [0.08, 0.004, 0], q: QI }
+  note: { p: [0.08, 0.004, 0], q: QI },
+  /* the restaurant: a menu flat on the palm, a glass round its body like the
+     mug, plates carried flat on an upturned hand, cutlery along the fingers */
+  menu: { p: [0.12, 0.012, 0], q: QI },
+  glass: xbasis([0.055, 0.04, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0]),
+  soup: { p: [0.1, 0.032, 0], q: QI },
+  pasta: { p: [0.1, 0.028, 0], q: QI },
+  fork: { p: [0.06, 0.012, 0], q: QI },
+  spoon: { p: [0.06, 0.012, 0], q: QI }
 };
 
 /** Prop sizes: long side, thickness, short side. */
@@ -108,7 +116,14 @@ export const PROP_SIZE: Record<PropKind, Vec3> = {
   tomato: [0.065, 0.06, 0.065],
   jar: [0.075, 0.1, 0.075],
   phone: [0.15, 0.009, 0.072],
-  note: [0.15, 0.001, 0.1]
+  note: [0.15, 0.001, 0.1],
+  /* the restaurant; the glass stands up (middle number is height) */
+  menu: [0.3, 0.012, 0.21],
+  glass: [0.07, 0.11, 0.07],
+  soup: [0.24, 0.06, 0.24],
+  pasta: [0.27, 0.05, 0.27],
+  fork: [0.19, 0.01, 0.026],
+  spoon: [0.19, 0.01, 0.036]
 };
 
 export type PropState = { x: Xform; visible: boolean; open: number };

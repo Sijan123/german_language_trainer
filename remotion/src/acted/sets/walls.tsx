@@ -16,7 +16,8 @@
 
 import React from "react";
 
-export type Opening = { x: number; w: number; h: number };
+/** A hole in a wall from `y` (0 for a door, a sill height for a window) up to `h`. */
+export type Opening = { x: number; w: number; h: number; y?: number };
 export type Band = { y0: number; y1: number; color: string; proud?: number };
 
 const Box: React.FC<{ at: [number, number, number]; size: [number, number, number]; color: string; shadow?: boolean }> = ({
@@ -30,7 +31,7 @@ const Box: React.FC<{ at: [number, number, number]; size: [number, number, numbe
 
 /** The x-ranges of [x0, x1] left over at height y once the openings are cut out. */
 function spans(x0: number, x1: number, openings: Opening[], y0: number, y1: number): [number, number][] {
-  const cuts = openings.filter((o) => y0 < o.h).map((o) => [o.x - o.w / 2, o.x + o.w / 2] as [number, number]);
+  const cuts = openings.filter((o) => y0 < o.h && y1 > (o.y ?? 0)).map((o) => [o.x - o.w / 2, o.x + o.w / 2] as [number, number]);
   cuts.sort((a, b) => a[0] - b[0]);
   const out: [number, number][] = [];
   let at = x0;
@@ -56,10 +57,11 @@ export const Wall: React.FC<{
   spans(x0, x1, openings, 0, height).forEach(([a, b], i) =>
     parts.push(<Box key={"w" + i} at={[(a + b) / 2, height / 2, zc]} size={[b - a, height, thick]} color={color} shadow={false} />)
   );
-  /* over each opening, the lintel */
-  openings.forEach((o, i) =>
-    parts.push(<Box key={"l" + i} at={[o.x, (o.h + height) / 2, zc]} size={[o.w, height - o.h, thick]} color={color} shadow={false} />)
-  );
+  /* over each opening, the lintel; under a window, the wall below the sill */
+  openings.forEach((o, i) => {
+    parts.push(<Box key={"l" + i} at={[o.x, (o.h + height) / 2, zc]} size={[o.w, height - o.h, thick]} color={color} shadow={false} />);
+    if (o.y) parts.push(<Box key={"s" + i} at={[o.x, o.y / 2, zc]} size={[o.w, o.y, thick]} color={color} shadow={false} />);
+  });
   bands.forEach((bd, j) =>
     spans(x0, x1, openings, bd.y0, bd.y1).forEach(([a, b], i) =>
       parts.push(

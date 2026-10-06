@@ -11,7 +11,8 @@
     "studio": "remotion studio src/index.ts",
     "film": "node scripts/render.mjs",
     "sfx": "node scripts/make-sfx.mjs",
-    "cast": "node scripts/cast.mjs"
+    "cast": "node scripts/cast.mjs",
+    "blender": "node scripts/blender.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.0",

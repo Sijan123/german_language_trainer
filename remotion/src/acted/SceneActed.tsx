@@ -15,7 +15,7 @@
 
 import React, { useMemo } from "react";
 import {
-  AbsoluteFill, Audio, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig
+  AbsoluteFill, Audio, OffthreadVideo, Sequence, delayRender, interpolate, staticFile, useCurrentFrame, useVideoConfig
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
@@ -36,6 +36,7 @@ import { Prop } from "./Props";
 import { mouthAt } from "./visemes";
 import { cameraAt, project, projectBox, W, H, type CamPose } from "./camera";
 import { add, mul } from "./math";
+import { Capture, type BlenderMode } from "./capture";
 
 /* One World per film, kept for the life of the page, so the memo of solved
    frames (and the ink laid down so far) carries from one frame to the next. */
@@ -66,7 +67,15 @@ const CameraRig: React.FC<{ pose: CamPose }> = ({ pose }) => {
   return null;
 };
 
-export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dialogue: d, scene }) => {
+/*
+ * `blender` (passed with --props by scripts/blender.mjs) switches the room
+ * over to Blender: `capture` hands the scene to it frame by frame (see
+ * capture.tsx), `plate` draws the film Blender rendered in place of the toon
+ * render. Everything printed on the film stays as it is.
+ */
+export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene; blender?: BlenderMode }> = ({
+  dialogue: d, scene, blender
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const acted = scene.acted!;
@@ -93,6 +102,11 @@ export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dia
     ink: pr.kind === "form" ? world.ink(name, frame) : undefined
   }));
   const pose = cameraAt(prog, world, frame);
+  /* a capture holds each frame until its data has gone (capture.tsx) */
+  const captureHandle = useMemo(
+    () => (blender?.capture ? delayRender(`blender capture, frame ${frame}`, { timeoutInMilliseconds: 600000 }) : 0),
+    [frame, blender?.capture]
+  );
 
   /* ------------------------------------------------------- overlays */
   const callout = line ? acted.callouts[line.i] : undefined;
@@ -144,6 +158,9 @@ export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dia
       ))}
 
       {/* --------------------------------------------------- the room */}
+      {blender?.plate ? (
+        <OffthreadVideo src={staticFile(blender.plate)} muted style={{ position: "absolute", inset: 0, width: W, height: H }} />
+      ) : (
       <ThreeCanvas width={W} height={H} shadows flat style={{ position: "absolute", inset: 0 }}>
         <CameraRig pose={pose} />
         <hemisphereLight args={["#fbf8f1", "#b9b4a8", 1.25]} />
@@ -172,9 +189,30 @@ export const SceneActed: React.FC<{ dialogue: Dialogue; scene: Scene }> = ({ dia
           );
         })}
         {props.map((p) =>
-          p.visible ? <Prop key={p.name} kind={p.kind} x={p.x} open={p.open} ink={p.ink} /> : null
+          blender?.capture ? (
+            /* a capture needs the same objects on every frame: hide, never unmount */
+            <group key={p.name} visible={p.visible}>
+              <Prop kind={p.kind} x={p.x} open={p.open} ink={p.ink} />
+            </group>
+          ) : p.visible ? (
+            <Prop key={p.name} kind={p.kind} x={p.x} open={p.open} ink={p.ink} />
+          ) : null
         )}
+        {blender?.capture ? (
+          <Capture
+            url={blender.capture}
+            exportScene={!!blender.exportScene}
+            frame={frame}
+            handle={captureHandle}
+            pose={pose}
+            meta={{
+              id: d.id, fps, frames: d.durationInFrames, width: W, height: H,
+              set: acted.set, lights: prog.set.lights ?? []
+            }}
+          />
+        ) : null}
       </ThreeCanvas>
+      )}
 
       {/* --------------------------------------------------- pointer */}
       <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ position: "absolute", inset: 0 }}>

@@ -51,6 +51,9 @@ OUT = os.path.join(PROJ, "public", "models", "cast")
 CAST = {
     "sijan": dict(build="m", hair="short", beard=True, brows="thick", jacket=True, lanyard=False),
     "shruti": dict(build="f", hair="long", beard=False, brows="normal", jacket=False, lanyard=True),
+    # the waiter in c003: nobody's double, so clean-shaven, and the long
+    # bistro apron says what he does before he does anything
+    "kellner": dict(build="m", hair="short", beard=False, brows="normal", jacket=False, lanyard=False, apron=True),
 }
 
 # ----------------------------------------------------------------------------
@@ -411,6 +414,7 @@ PREVIEW = {
     "trousers": (0.03, 0.035, 0.05, 1), "shoes": (0.04, 0.027, 0.02, 1), "jacket": (0.05, 0.15, 0.27, 1),
     "lining": (0.025, 0.07, 0.13, 1), "lanyard": (0.03, 0.11, 0.25, 1), "card": (0.9, 0.88, 0.83, 1),
     "cardStripe": (0.03, 0.11, 0.25, 1), "brow": (0.02, 0.012, 0.009, 1),
+    "apron": (0.02, 0.02, 0.025, 1),
 }
 
 
@@ -1073,6 +1077,36 @@ def lanyard(arm, torso_field):
     part("cardStripe", stripe, [[0, 3, 2, 1]], Plain("cardStripe", {"spine2": 1.0}), arm)
 
 
+def apron(arm, g):
+    """
+    A waiter's long bistro apron: a sheet tied at the waist, hanging in front
+    of the legs to below the knee, curved round the hips. The top rides the
+    pelvis; lower down each half follows its own thigh, so a stride swings it
+    instead of pushing a knee through it.
+    """
+    nz, ny = 17, 26
+    zs = np.linspace(-0.17, 0.17, nz)
+    ys = np.linspace(0.99, 0.4, ny)
+    V = []
+    for y in ys:
+        # the front of the waist, then hanging a little forward of the thighs
+        lean = 0.012 * (0.99 - y)
+        for z in zs:
+            V.append([0.132 + lean - 1.8 * z * z, y, z])
+    V = np.array(V)
+    F = [[j * nz + i, j * nz + i + 1, (j + 1) * nz + i + 1, (j + 1) * nz + i]
+         for j in range(ny - 1) for i in range(nz - 1)]
+
+    class Spec(Plain):
+        def weights(self, P):
+            y, z = P[:, 1], P[:, 2]
+            leg = smoothstep(0.86, 0.6, y)
+            right = 0.5 + 0.5 * np.clip(z / 0.08, -1, 1)
+            return {"pelvis": 1 - leg, "thigh_R": leg * right, "thigh_L": leg * (1 - right)}
+
+    part("apron", V, F, Spec("apron", {}), arm)
+
+
 def jacket(arm, g, torso, body):
     """
     A jacket: a thin solid shell a little outside the torso, cut open in a V
@@ -1203,6 +1237,8 @@ def build(name, preview=None):
                 t = smin(t, p.d(P), 0.05)
             return t
         lanyard(arm, tf)
+    if g.get("apron"):
+        apron(arm, g)
 
     os.makedirs(OUT, exist_ok=True)
     path = os.path.join(OUT, name + ".glb")

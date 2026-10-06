@@ -225,6 +225,8 @@ export type Look3D = {
   shoes: string;
   /** an ID on a lanyard, which is how you know who works here */
   lanyard?: boolean;
+  /** a waiter's long apron (the model has to have one: blender/cast.py) */
+  apron?: string;
   /**
    * A rigged model from public/models/cast/<model>.glb (built by
    * blender/cast.py) instead of the shapes Person.tsx draws. The colours
@@ -281,7 +283,9 @@ export type PropKind =
   /* the flat */
   | "clock" | "sandwich" | "lunchbox" | "mug" | "key"
   /* the supermarket */
-  | "basket" | "carton" | "eggs" | "tomato" | "jar" | "phone" | "note";
+  | "basket" | "carton" | "eggs" | "tomato" | "jar" | "phone" | "note"
+  /* the restaurant */
+  | "menu" | "glass" | "soup" | "pasta" | "fork" | "spoon";
 
 export type Acted = {
   /** a key of SETS3D in acted/sets */

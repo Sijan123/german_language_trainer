@@ -103,7 +103,8 @@ function palette(look: Look3D): Record<string, string> {
     lanyard: "#2f5d8a",
     card: "#f4f1ea",
     cardStripe: "#2f5d8a",
-    earbud: "#f4f4f2"
+    earbud: "#f4f4f2",
+    apron: look.apron ?? "#2b2b30"
   };
 }
 
@@ -325,7 +326,7 @@ function prepare(scene: THREE.Group, look: Look3D): Rig {
       const c = colours[m.name];
       if (!c) throw new Error(`cast model: no colour for material "${m.name}"`);
       /* the jacket's lining, the lanyard and single-skinned clothes are seen from both sides */
-      const twoSided = /^(lanyard|card|cardStripe|jacket|top|trousers|lining)$/.test(m.name);
+      const twoSided = /^(lanyard|card|cardStripe|jacket|top|trousers|lining|apron)$/.test(m.name);
       return toon(c, twoSided ? { side: THREE.DoubleSide } : {});
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(paint) : paint(mesh.material);

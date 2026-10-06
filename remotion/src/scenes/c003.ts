@@ -19,10 +19,14 @@
  */
 
 import type { Scene } from "../types";
+import { c003Acted } from "./c003.acted";
 
 export const c003: Scene = {
   id: "c003",
   call: false,
+  /* Played in 3D, in the restaurant, with a waiter: see c003.acted.ts. Delete
+     this line to go back to the drawn staging below. */
+  acted: c003Acted,
 
   rooms: [
     { set: "restaurant", from: 0, to: 1920 }

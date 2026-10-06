@@ -18,6 +18,7 @@ import { quatFromBasis, type Xform } from "./math";
 import { Bag, CakeBox, Card, Coins, Loaf, Roll, Slice, Wallet } from "./BakeryProps";
 import { AlarmClock, Key, LunchBox, Mug, Sandwich } from "./FlatProps";
 import { Basket, Carton, Eggs, Jar, Note, Phone, Tomato } from "./GroceryProps";
+import { Fork, Glass, Menu, Pasta, Soup, Spoon } from "./RestaurantProps";
 import { theme } from "../theme";
 
 const FONT = "'IBM Plex Sans', system-ui, sans-serif";
@@ -294,6 +295,12 @@ export const Prop: React.FC<{ kind: PropKind; x: Xform; open: number; ink?: Ink 
     {kind === "jar" ? <Jar /> : null}
     {kind === "phone" ? <Phone /> : null}
     {kind === "note" ? <Note /> : null}
+    {kind === "menu" ? <Menu open={open} /> : null}
+    {kind === "glass" ? <Glass /> : null}
+    {kind === "soup" ? <Soup eaten={open} /> : null}
+    {kind === "pasta" ? <Pasta eaten={open} /> : null}
+    {kind === "fork" ? <Fork /> : null}
+    {kind === "spoon" ? <Spoon /> : null}
   </group>
 );
 

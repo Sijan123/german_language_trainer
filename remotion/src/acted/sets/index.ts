@@ -13,6 +13,7 @@ import { Buergerbuero3D, buergerbueroLayout } from "./buergerbuero";
 import { Baeckerei3D, baeckereiLayout } from "./baeckerei";
 import { Wohnung3D, wohnungLayout } from "./wohnung";
 import { Telefon3D, telefonLayout } from "./telefon";
+import { Restaurant3D, restaurantLayout } from "./restaurant";
 
 export type ChairDef = {
   /** seat centre on the floor plan */
@@ -31,6 +32,12 @@ export type SetLayout = {
   spots: Record<string, { p: Vec3; yaw?: number; hidden?: boolean }>;
   /** named points for a gaze or a callout */
   anchors: Record<string, Vec3>;
+  /**
+   * The room's own lamps, for a renderer that lights properly (the Blender
+   * render, blender/film.py): where each is, its colour, its power in watts.
+   * The toon render lights the room with its sun and sky and ignores these.
+   */
+  lights?: { p: Vec3; color: string; power: number }[];
 };
 
 /** What changes in the room during the film, as of one frame. */
@@ -51,5 +58,6 @@ export const SETS3D: Record<string, { layout: SetLayout; Component: React.FC<{ s
   buergerbuero: { layout: buergerbueroLayout, Component: Buergerbuero3D },
   baeckerei: { layout: baeckereiLayout, Component: Baeckerei3D },
   wohnung: { layout: wohnungLayout, Component: Wohnung3D },
-  telefon: { layout: telefonLayout, Component: Telefon3D }
+  telefon: { layout: telefonLayout, Component: Telefon3D },
+  restaurant: { layout: restaurantLayout, Component: Restaurant3D }
 };

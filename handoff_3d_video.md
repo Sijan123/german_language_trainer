@@ -93,12 +93,14 @@ remotion/
       Person3D.tsx    poses a rigged cast model (public/models/cast/) from a solved Body
       Person.tsx      the older primitive person, used when a look has no `model`
       Props.tsx       draws passport, folder, sheet, form (+ ink), pen
+      capture.tsx     hands the scene to Blender (section 9d)
       models.tsx      Kenney GLB loading, re-centring, toon repaint, <Model>
       sets/
         index.ts      SETS3D registry; SetLayout / SetState types
         buergerbuero.tsx   the Bürgerbüro: layout (data) + component
         baeckerei.tsx      the bakery (c018)
         wohnung.tsx        the flat: bedroom + kitchen (c001)
+        restaurant.tsx     the restaurant (c003)
         walls.tsx          walls with real doorways, door frames and leaves, rooms behind
       SceneActed.tsx  the composition (3D canvas + all 2D overlays + audio)
     scenes/
@@ -436,6 +438,27 @@ edge facing the camera); spots `clockTable`, `board`, `keyL/keyR` (at the
 board, so `type` reads as working there), `lunchbox`, `lunchOut`, `mug`,
 `key`, `exchange`. Both clocks say half past seven.
 
+### The restaurant (`restaurant`, c003)
+
+An evening restaurant. Back wall at z = -2.3 with, left to right: the glass
+street door (x -3.6, opens on `room` value `door`), the waiter's stand, a
+wide window onto a night street (canvas texture), the chalkboard of the
+evening's dishes, the kitchen door (x 2.05, `room` value `kitchen`, a bright
+kitchen behind it) and the bar. The window table is at (0, -1.3), 0.8 m
+square, top 0.77 (rig.ts's desk height, so `desk: true` rests hands on it).
+Chairs `shruti` (left, facing +x) and `sijan` (right) start pulled out: walk
+to the standing spot, `sit`, then `scoot by 0.26`. The waiter serves from
+**behind** the table (0, -1.9), facing the camera, so he never stands between
+the lens and the diners; behind the bar there is a corridor at z -1.88.
+Spots: `menuStand`, `menuShruti/Sijan`, `placeShruti/Sijan` (plates),
+`spoonShruti`, `forkSijan`, `spoonDone`, `forkDone`, `glassShruti/Sijan`,
+`kitchenSoup/Pasta/Menus` (on the pass behind the wall). Anchors: `table`,
+`fenster`, `board`, `boardSuppe/Nudeln/Eis` (rings on the chalkboard rows),
+`door`, `kitchen`, `stand`. `lights` lists its lamps for the Blender render.
+
+Props added with it (`RestaurantProps.tsx`): `menu` (`open` = cover),
+`glass`, `soup` and `pasta` (`open` = how much is eaten), `fork`, `spoon`.
+
 ### Making a new room
 
 1. Pick furniture from the Kenney Furniture Kit (CC0; downloaded from
@@ -506,6 +529,15 @@ minute and writes `public/models/cast/<name>.glb`. Blender 5.2 is at
   `JAW` and `LID` set how far the jaw drops and the lids close.
 - `rig.ts`'s `pocketIn` spot moved forward (0.07 → 0.12) so the hand goes
   under the jacket panel instead of into the chest.
+
+### A third person: the waiter (`kellner.glb`)
+
+`CAST["kellner"]` in cast.py: male build, clean-shaven, and a long bistro
+apron (`apron=True`, material `apron`, coloured by `look.apron`). The apron
+rides the pelvis at the top and each thigh lower down, so a stride swings it.
+He is silent: a cast member with no lines simply has no speech, and his
+default gaze is the first other person in `cast` (put him last). Rebuild with
+`npm run cast -- kellner`.
 
 ### Downloaded avatars (c002: `sijan_test.glb`)
 
@@ -773,6 +805,56 @@ anticipation pose.
    scene because it renders in real time; that is not the film. Judge
    smoothness from a rendered file or a quarter-size render.
 
+## 9d. Rendering in Blender instead of the browser (pilot, c003)
+
+`npm run blender -- c003` renders an acted film with Blender's EEVEE (real
+lights, soft shadows, depth of field, motion blur) instead of the toon
+renderer, with the same subtitles, rings, cards and sound on top. **Nothing
+is staged twice**: the browser's own scene is captured and handed over.
+
+1. **capture** (`src/acted/capture.tsx`): Remotion renders the film with
+   `--props {"blender":{"capture":URL}}`. A still exports the whole three.js
+   scene with GLTFExporter (objects renamed `n<i>` by their place in a
+   depth-first walk); a render posts every frame's local transforms,
+   visibility, shape-key weights and camera to a server in
+   `scripts/blender.mjs`. Output: `remotion/out/blender/<id>/`.
+2. **assemble**: those frames become glTF animation on the scene
+   (`anim.glb`, only what moves) plus `camera.json`.
+3. **render** (`blender/film.py`): imports `anim.glb`, deletes the browser's
+   lights, makes the toon colours matte, lights the room (the set's
+   `lights` × `--lamp-gain`, a warm key, a fill, a cool rim through the
+   window, a night sky), keys the camera, renders PNGs (resumable) and makes
+   `public/blender/<id>.mp4`.
+4. **composite**: Remotion renders with `{"blender":{"plate":...}}`: the
+   Blender plate under the overlays → `remotion/out/<id>-blender.mp4`. It
+   does not ship; `video/<id>.mp4` is untouched.
+
+Check the look first: `npm run blender -- c003 --step render --still 1000`
+(about a minute). Options: `--res 1280x720`, `--samples 8`, `--exposure
+-0.3`, `--lamp-gain 2.5`, `--fstop 2.8`, `--rt 0|1`, `--frames A-B`.
+
+**Cost on this laptop (GeForce MX250):** about 0.75 s per sample per frame
+at 720p. 8 samples ≈ 6 s a frame ≈ 3½–4 hours for c003's 2139 frames. The
+user chose not to run it for c003 (2026-09-25) and shipped the toon render;
+steps 1–2 are done for c003 (`out/blender/c003/anim.glb`), so
+`npm run blender -- c003 --step render` then `--step composite` finishes it.
+
+Rules for a set to be capturable: nothing may mount or unmount during the
+film (capture mode hides props instead of unmounting them; the assembler
+refuses a frame whose object count differs), and anything that changes must
+change by transform, not by rebuilding geometry (the soup's level is a
+scale for this reason). Canvas textures that change (the Bürgerbüro's
+screen and number display) are exported as they were on frame 0, and ink on
+a form is not captured.
+
+Traps met: the capture server must not share a process with a blocking
+`execFileSync` (the browser's POST never gets answered); the export must
+wait for the furniture and cast to load (it waits until its own
+delayRender is the only one pending); the per-frame delayRender has to be
+taken in SceneActed's render, not in the canvas's effect, or the last
+frames are lost; Blender needs absolute output paths; a real lamp 20 cm
+over a head blows it out (the pendants hang at 2.2 m).
+
 ## 10. Traps (each cost a render)
 
 - **A zero-length `step` or `walk`** (stepping to where you already stand)
@@ -829,6 +911,10 @@ shipped** after an animation editor's review and a round of fixes (section
   10:1571 11:1747 12:1932, 2362 frames
 - c001: 0:194 1:306 2:413 3:513 4:630 5:739 6:952 7:1029 8:1247 9:1353
   10:1484 11:1605, 2040 frames
+- c003 (restaurant, with the waiter; three people): 0:161 1:291 2:402 3:639
+  4:756 5:865 6:1035 7:1124 8:1316 9:1445 10:1571 11:1661 12:1784, 2139
+  frames. Rendered and shipped with `npm run film c003` (toon); the Blender
+  version is prepared but not rendered (section 9d).
 - c002 (the cast's Sijan; an earlier cut used the test avatar; supermarket
   + home, set `telefon`): 0:134 1:221 2:349
   3:430 4:573 5:667 6:823 7:929 8:1050 9:1148 10:1291 11:1382 12:1514, 1911

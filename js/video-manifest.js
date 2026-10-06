@@ -15,7 +15,7 @@
 export const VIDEO = {
   "c001": { seconds: 68.05, lines: 12 },
   "c002": { seconds: 63.74, lines: 13 },
-  "c003": { seconds: 52.87, lines: 13 },
+  "c003": { seconds: 71.36, lines: 13 },
   "c004": { seconds: 49.1, lines: 12 },
   "c005": { seconds: 51.07, lines: 13 },
   "c006": { seconds: 50.7, lines: 13 },
